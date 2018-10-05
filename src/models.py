@@ -12,6 +12,8 @@ from torch.distributions.normal import Normal
 from torch.distributions import kl_divergence
 from torch.autograd import Function
 
+from functions import vq, vq_st
+
 
 def to_scalar(arr):
     if type(arr) == list:
@@ -100,7 +102,7 @@ class VQEmbedding(nn.Module):
 
 class ResBlock(nn.Module):
     def __init__(self, dim):
-        super().__init__()
+        super(ResBlock, self).__init__()
         self.block = nn.Sequential(
             nn.ReLU(True),
             nn.Conv2d(dim, dim, 3, 1, 1),
@@ -114,9 +116,9 @@ class ResBlock(nn.Module):
         return x + self.block(x)
 
 
-class VectorQuantizedVAE(nn.Module):
+class VQVAE(nn.Module):
     def __init__(self, input_dim, dim, K=512):
-        super().__init__()
+        super(VQVAE, self).__init__()
         self.encoder = nn.Sequential(
             nn.Conv2d(input_dim, dim, 4, 2, 1),
             nn.BatchNorm2d(dim),
@@ -160,7 +162,7 @@ class VectorQuantizedVAE(nn.Module):
 
 class GatedActivation(nn.Module):
     def __init__(self):
-        super().__init__()
+        super(GatedActivation, self).__init__()
 
     def forward(self, x):
         x, y = x.chunk(2, dim=1)
@@ -169,7 +171,7 @@ class GatedActivation(nn.Module):
 
 class GatedMaskedConv2d(nn.Module):
     def __init__(self, mask_type, dim, kernel, residual=True, n_classes=10):
-        super().__init__()
+        super(GatedMaskedConv2d, self).__init__()
         assert kernel % 2 == 1, "Kernel size must be odd"
         self.mask_type = mask_type
         self.residual = residual
@@ -226,7 +228,7 @@ class GatedMaskedConv2d(nn.Module):
 
 class GatedPixelCNN(nn.Module):
     def __init__(self, input_dim=256, dim=64, n_layers=15, n_classes=10):
-        super().__init__()
+        super(GatedPixelCNN, self).__init__()
         self.dim = dim
 
         # Create embedding layer to embed input
@@ -281,4 +283,3 @@ class GatedPixelCNN(nn.Module):
                     probs.multinomial(1).squeeze().data
                 )
         return x
-
