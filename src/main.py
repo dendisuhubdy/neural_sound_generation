@@ -83,7 +83,7 @@ def main():
             test_vqvae(args, model, test_loader, device, epoch)
 
         with torch.no_grad():
-            sample = torch.randn(64, 20).to(device)
+            sample = torch.randn(64, 1, 28, 28).to(device)
             sample, _ = model(sample)
             save_image(sample.view(64, 1, 28, 28),
                        './results/sample_' + str(epoch) + '.png')
