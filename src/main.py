@@ -19,9 +19,13 @@ from test import test
 
 def parse_args():
     parser = argparse.ArgumentParser(description='VAE MNIST Example')
-    parser.add_argument('--batch-size', type=int, default=128, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=256, metavar='N',
                         help='input batch size for training (default: 128)')
-    parser.add_argument('--epochs', type=int, default=10, metavar='N',
+    parser.add_argument('--lr-rate', type=float, default=1e-3, metavar='N',
+                        help='input batch size for training (default: 128)')
+    parser.add_argument('--dataset', type=str, default='MNIST', metavar='N',
+                        help='dataset for training')
+    parser.add_argument('--epochs', type=int, default=100, metavar='N',
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='enables CUDA training')
@@ -46,8 +50,13 @@ def main():
     # load test data
     test_loader = load_test_data(args, kwargs)
 
-    model = VAE().to(device)
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    # here we can swap models to VAE, VQ-VAE, PixelCNN, PixelRNN
+    input_dim = 1
+    dim = 256
+    z_dim = 128
+    model = VAE(input_dim, dim, z_dim).to(device)
+    print(model)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr_rate)
 
     for epoch in range(1, args.epochs + 1):
         train(args, model, optimizer, train_loader, device, epoch)
@@ -56,7 +65,7 @@ def main():
             sample = torch.randn(64, 20).to(device)
             sample = model.decode(sample).cpu()
             save_image(sample.view(64, 1, 28, 28),
-                       '../results/sample_' + str(epoch) + '.png')
+                       './results/sample_' + str(epoch) + '.png')
 
 
 if __name__ == "__main__":

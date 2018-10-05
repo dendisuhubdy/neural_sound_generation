@@ -96,3 +96,9 @@ def _normalize(S, min_level_db):
 
 def _denormalize(S, min_level_db):
     return (np.clip(S, 0, 1) * -min_level_db) + min_level_db
+
+def visualize_embedding(model):
+    proj = umap.UMAP(n_neighbors=3,
+                     min_dist=0.1,
+                     metric='euclidean').fit_transform(model._embedding.weight.data.cpu())
+    plt.scatter(proj[:,0], proj[:,1], alpha=0.3)

@@ -4,7 +4,7 @@ Copyrigt Dendi Suhubdy, 2018
 All rights reserved
 
 """
-from loss import loss_function
+from loss import binary_cross_entropy, mse_loss
 
 
 def train(args, model, optimizer, train_loader, device, epoch):
@@ -13,8 +13,8 @@ def train(args, model, optimizer, train_loader, device, epoch):
     for batch_idx, (data, _) in enumerate(train_loader):
         data = data.to(device)
         optimizer.zero_grad()
-        recon_batch, mu, logvar = model(data)
-        loss = loss_function(recon_batch, data, mu, logvar)
+        recon_batch, kl_d = model(data)
+        loss = mse_loss(recon_batch, data, kl_d)
         loss.backward()
         train_loss += loss.item()
         optimizer.step()
