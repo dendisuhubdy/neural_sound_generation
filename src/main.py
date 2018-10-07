@@ -84,7 +84,10 @@ def main():
 
         with torch.no_grad():
             sample = torch.randn(64, 1, 28, 28).to(device)
-            sample, _ = model(sample)
+            if args.model == 'vae':
+                sample, _ = model(sample)
+            elif args.model == 'vqvae':
+                sample, _, _ = model(sample)
             save_image(sample.view(64, 1, 28, 28),
                        './results/sample_' + str(epoch) + '.png')
 
