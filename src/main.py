@@ -9,7 +9,7 @@ import argparse
 import torch
 from torch import nn, optim
 from torchvision import datasets, transforms
-from torchvision.utils import save_image
+from torchvision.utils import save_image, make_grid
 
 from dataloader import load_training_data, load_test_data
 from models import VAE, VQVAE
@@ -83,13 +83,14 @@ def main():
             test_vqvae(args, model, test_loader, device, epoch)
 
         with torch.no_grad():
-            sample = torch.randn(64, 1, 28, 28).to(device)
+            # sample = torch.randn(64, 1, 28, 28).to(device)
+            sample, _ = next(iter(test_loader))
             if args.model == 'vae':
-                sample, _ = model(sample)
+                reconstruction, _ = model(sample)
             elif args.model == 'vqvae':
-                sample, _, _ = model(sample)
-            save_image(sample.view(64, 1, 28, 28),
-                       './results/sample_' + str(epoch) + '.png')
+                reconstruction, _, _ = model(sample)
+            grid = make_grid(reconstruction.cpu(), nrow=8, range=(-1, 1), normalize=True)
+            save_image(grid, './results/sample_' + str(epoch) + '.png')
 
 
 if __name__ == "__main__":

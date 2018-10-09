@@ -1,0 +1,3 @@
+[submodule "libs/audio"]
+	path = libs/audio
+	url = git@github.com:dendisuhubdy/audio.git
