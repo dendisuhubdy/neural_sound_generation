@@ -1,7 +1,10 @@
 import random
 import numpy as np
+import math
 import torch
 import torch.utils.data
+from torch.nn.utils.rnn import pack_padded_sequence
+import torch.nn as nn
 
 from librosa.filters import mel as librosa_mel_fn
 from utils import load_wav_to_torch, load_filepaths_and_text
@@ -110,6 +113,13 @@ class TextMelLoader(torch.utils.data.Dataset):
         return len(self.audiopaths_and_text)
 
 
+def round_down(num, divisor):
+    return num - (num%divisor)
+
+
+def round_up(x):
+    return int(math.ceil(x / 10.0)) * 10
+
 class TextMelCollate():
     """ Zero-pads model inputs and targets based on number of frames per setep
     """
@@ -126,6 +136,7 @@ class TextMelCollate():
         input_lengths, ids_sorted_decreasing = torch.sort(
             torch.LongTensor([len(x[0]) for x in batch]),
             dim=0, descending=True)
+        # obtain the maximum input length
         max_input_len = input_lengths[0]
 
         text_padded = torch.LongTensor(len(batch), max_input_len)
@@ -143,18 +154,26 @@ class TextMelCollate():
         if max_target_len % self.n_frames_per_step != 0:
             max_target_len += self.n_frames_per_step - max_target_len % self.n_frames_per_step
             assert max_target_len % self.n_frames_per_step == 0
-
+        # max_target_len = round_down(max_target_len, 10)
         # include mel padded and gate padded
         mel_padded = torch.FloatTensor(len(batch), num_mels, max_target_len)
         mel_padded.zero_()
+        print(mel_padded.size())
+        # mel_padded = torch.zeros((len(batch), num_mels, max_target_len))
         gate_padded = torch.FloatTensor(len(batch), max_target_len)
         gate_padded.zero_()
         output_lengths = torch.LongTensor(len(batch))
+        
         for i in range(len(ids_sorted_decreasing)):
             mel = batch[ids_sorted_decreasing[i]][1]
             mel_padded[i, :, :mel.size(1)] = mel
             gate_padded[i, mel.size(1):] = 1
             output_lengths[i] = mel.size(1)
+        
+        pad = nn.ConstantPad1d(2, 0)
+        mel_padded = pad(mel_padded)
+
+        # mel_padded = pack_padded_sequence(mel_padded, output_lengths, batch_first=True)
 
         return text_padded, input_lengths, mel_padded, gate_padded, \
             output_lengths
