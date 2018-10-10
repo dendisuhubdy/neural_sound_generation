@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from loss import binary_cross_entropy, mse_loss
 from models import to_scalar
 
+
 def test_vae(args, model, test_loader, device, epoch):
     model.eval()
     test_loss = 0

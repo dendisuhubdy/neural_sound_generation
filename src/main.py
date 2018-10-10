@@ -11,10 +11,12 @@ from torch import nn, optim
 from torchvision import datasets, transforms
 from torchvision.utils import save_image, make_grid
 
-from dataloader import load_training_data, load_test_data
+from dataloader import (load_training_data, load_test_data,
+                       prepare_dataloaders)
 from models import VAE, VQVAE
 from train import train_vae, train_vqvae
 from test import test_vae, test_vqvae
+from hparams import create_hparams
 
 
 def parse_args():
@@ -25,6 +27,10 @@ def parse_args():
                         help='input batch size for training (default: 128)')
     parser.add_argument('--dataset', type=str, default='MNIST', metavar='N',
                         help='dataset for training')
+    parser.add_argument('--datadir', type=str, default='./data/', metavar='N',
+                        help='dataset directory for training')
+    # remember to execute
+    # `sed -i -- 's,DUMMY,ljs_dataset_folder/wavs,g' filelists/*.txt`
     parser.add_argument('--epochs', type=int, default=100, metavar='N',
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
@@ -36,7 +42,10 @@ def parse_args():
     parser.add_argument('--model', type=str, default='vae', metavar='N',
                         help='model for training')
     parser.add_argument('--beta', type=float, default=1.0,
-        help='contribution of commitment loss, between 0.1 and 2.0 (default: 1.0)')
+                        help='contribution of commitment loss,\
+                              between 0.1 and 2.0 (default: 1.0)')
+    parser.add_argument('--hparams', type=str,
+                        required=False, help='comma separated name=value pairs')
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     return args
@@ -45,14 +54,22 @@ def parse_args():
 def main():
     args = parse_args()
     torch.manual_seed(args.seed)
+    hparams = create_hparams(args.hparams)
+
+    torch.backends.cudnn.enabled = hparams.cudnn_enabled
+    torch.backends.cudnn.benchmark = hparams.cudnn_benchmark
 
     device = torch.device("cuda" if args.cuda else "cpu")
 
-    kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
-    # load training data
-    train_loader = load_training_data(args, kwargs)
-    # load test data
-    test_loader = load_test_data(args, kwargs)
+    if args.dataset == 'ljspeech':
+        train_loader, test_loader, collate_fn = prepare_dataloaders(hparams)
+
+    else:
+        kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
+        # load training data
+        train_loader = load_training_data(args, kwargs)
+        # load test data
+        test_loader = load_test_data(args, kwargs)
 
     # here we can swap models to VAE, VQ-VAE, PixelCNN, PixelRNN
     if args.dataset == 'MNIST':
@@ -64,6 +81,10 @@ def main():
         input_dim = 3
         dim = 256
         z_dim = 512
+    else:
+        input_dim = 1
+        dim = 256
+        z_dim = 128
 
     if args.model == 'vae':
         model = VAE(input_dim, dim, z_dim).to(device)

@@ -4,11 +4,12 @@ Copyrigt Dendi Suhubdy, 2018
 All rights reserved
 
 """
-i# coding: utf-8
+# coding: utf-8
 from __future__ import with_statement, print_function, absolute_import
 import numpy as np
 from scipy import signal
 from scipy.io import wavfile
+from scipy.io.wavfile import read
 
 # librosa as sound processors
 import librosa
@@ -26,6 +27,36 @@ from torch.distributed import get_world_size
 from torch.utils.data.sampler import Sampler
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
+
+
+def get_mask_from_lengths(lengths):
+    max_len = torch.max(lengths)
+    ids = torch.arange(0, max_len).long().cuda()
+    mask = (ids < lengths.unsqueeze(1)).byte()
+    return mask
+
+
+def load_wav_to_torch(full_path, sr):
+    sampling_rate, data = read(full_path)
+    assert sr == sampling_rate, "{} SR doesn't match {} on path {}".format(
+        sr, sampling_rate, full_path)
+    return torch.FloatTensor(data.astype(np.float32))
+
+
+def load_filepaths_and_text(filename, sort_by_length, split="|"):
+    with open(filename, encoding='utf-8') as f:
+        filepaths_and_text = [line.strip().split(split) for line in f]
+
+    if sort_by_length:
+        filepaths_and_text.sort(key=lambda x: len(x[1]))
+
+    return filepaths_and_text
+
+
+def to_gpu(x):
+    x = x.contiguous().cuda(async=True)
+    return torch.autograd.Variable(x)
+
 
 def load_wav(path, sample_rate):
     return librosa.core.load(path, sr=sample_rate)[0]
@@ -63,7 +94,6 @@ def adjust_time_resolution(quantized, mel, silence_threshold):
     start, end = start_and_end_indices(quantized, silence_threshold)
 
     return quantized[start:end], mel[start:end, :]
-adjast_time_resolution = adjust_time_resolution  # 'adjust' is correct spelling, this is for compatibility
 
 
 def start_and_end_indices(quantized, silence_threshold=2):
@@ -99,25 +129,6 @@ def lws_pad_lr(x, fsize, fshift):
     T = len(x) + 2 * pad
     r = (M - 1) * fshift + fsize - T
     return pad, pad + r
-
-# Conversions:
-
-
-_mel_basis = None
-
-
-def _linear_to_mel(spectrogram):
-    global _mel_basis
-    if _mel_basis is None:
-        _mel_basis = _build_mel_basis()
-    return np.dot(_mel_basis, spectrogram)
-
-
-def _build_mel_basis(sample_rate, fft_size, fmin, fmax, num_mels):
-    assert fmax <= sample_rate // 2
-    return librosa.filters.mel(sample_rate, fft_size,
-                               fmin=fmin, fmax=fmax,
-                               n_mels=num_mels)
 
 
 def _amp_to_db(x, min_level_db):
@@ -184,15 +195,6 @@ def _build_mel_basis(fmin, fmax, sample_rate, fft_size, num_mels):
                                n_mels=num_mels)
 
 
-def _amp_to_db(x, min_level_db):
-    min_level = np.exp(min_level_db / 20 * np.log(10))
-    return 20 * np.log10(np.maximum(min_level, x))
-
-
-def _db_to_amp(x):
-    return np.power(10.0, x * 0.05)
-
-
 def _normalize(S, min_level_db):
     return np.clip((S - min_level_db) / -min_level_db, 0, 1)
 
@@ -200,12 +202,14 @@ def _normalize(S, min_level_db):
 def _denormalize(S, min_level_db):
     return (np.clip(S, 0, 1) * -min_level_db) + min_level_db
 
+
 def visualize_embedding(model):
     proj = umap.UMAP(n_neighbors=3,
                      min_dist=0.1,
                      metric='euclidean').fit_transform(model._embedding.weight.data.cpu())
     # plt.scatter(proj[:,0], proj[:,1], alpha=0.3)
     return proj
+
 
 def _assert_valid_input_type(s):
     assert s == "mulaw-quantize" or s == "mulaw" or s == "raw"
@@ -536,4 +540,3 @@ class DistributedBucketingSampler(Sampler):
         g.manual_seed(epoch)
         bin_ids = list(torch.randperm(len(self.bins), generator=g))
         self.bins = [self.bins[i] for i in bin_ids]
-
