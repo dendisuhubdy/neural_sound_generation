@@ -21,7 +21,7 @@ from data_utils import TextMelLoader, TextMelCollate
 
 def load_training_data(args, kwargs):
     train_loader = torch.utils.data.DataLoader(
-        eval('datasets.'+args.dataset)('./data/{}/'.format(args.dataset),
+        eval('datasets.'+args.dataset)('./{}/{}/'.format(args.datadir, args.dataset),
                                        train=True, download=True,
                                        transform=transforms.ToTensor()),
         batch_size=args.batch_size,
@@ -31,7 +31,7 @@ def load_training_data(args, kwargs):
 
 def load_test_data(args, kwargs):
     test_loader = torch.utils.data.DataLoader(
-        eval('datasets.'+args.dataset)('./data/{}/'.format(args.dataset),
+        eval('datasets.'+args.dataset)('./{}/{}/'.format(args.datadir, args.dataset),
                                        train=False, transform=transforms.ToTensor()),
         batch_size=args.batch_size,
         shuffle=True, **kwargs)

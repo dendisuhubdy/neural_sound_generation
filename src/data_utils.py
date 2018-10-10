@@ -3,9 +3,53 @@ import numpy as np
 import torch
 import torch.utils.data
 
-import layers
+from librosa.filters import mel as librosa_mel_fn
 from utils import load_wav_to_torch, load_filepaths_and_text
 from text import text_to_sequence
+from audio_processing import dynamic_range_compression
+from audio_processing import dynamic_range_decompression
+from stft import STFT
+
+
+class TacotronSTFT(torch.nn.Module):
+    def __init__(self, filter_length=1024, hop_length=256, win_length=1024,
+                 n_mel_channels=80, sampling_rate=22050, mel_fmin=0.0,
+                 mel_fmax=None):
+        super(TacotronSTFT, self).__init__()
+        self.n_mel_channels = n_mel_channels
+        self.sampling_rate = sampling_rate
+        self.stft_fn = STFT(filter_length, hop_length, win_length)
+        mel_basis = librosa_mel_fn(
+            sampling_rate, filter_length, n_mel_channels, mel_fmin, mel_fmax)
+        mel_basis = torch.from_numpy(mel_basis).float()
+        self.register_buffer('mel_basis', mel_basis)
+
+    def spectral_normalize(self, magnitudes):
+        output = dynamic_range_compression(magnitudes)
+        return output
+
+    def spectral_de_normalize(self, magnitudes):
+        output = dynamic_range_decompression(magnitudes)
+        return output
+
+    def mel_spectrogram(self, y):
+        """Computes mel-spectrograms from a batch of waves
+        PARAMS
+        ------
+        y: Variable(torch.FloatTensor) with shape (B, T) in range [-1, 1]
+
+        RETURNS
+        -------
+        mel_output: torch.FloatTensor of shape (B, n_mel_channels, T)
+        """
+        assert(torch.min(y.data) >= -1)
+        assert(torch.max(y.data) <= 1)
+
+        magnitudes, phases = self.stft_fn.transform(y)
+        magnitudes = magnitudes.data
+        mel_output = torch.matmul(self.mel_basis, magnitudes)
+        mel_output = self.spectral_normalize(mel_output)
+        return mel_output
 
 
 class TextMelLoader(torch.utils.data.Dataset):
@@ -21,7 +65,7 @@ class TextMelLoader(torch.utils.data.Dataset):
         self.max_wav_value = hparams.max_wav_value
         self.sampling_rate = hparams.sampling_rate
         self.load_mel_from_disk = hparams.load_mel_from_disk
-        self.stft = layers.TacotronSTFT(
+        self.stft = TacotronSTFT(
             hparams.filter_length, hparams.hop_length, hparams.win_length,
             hparams.n_mel_channels, hparams.sampling_rate, hparams.mel_fmin,
             hparams.mel_fmax)
@@ -43,6 +87,9 @@ class TextMelLoader(torch.utils.data.Dataset):
             audio_norm = audio_norm.unsqueeze(0)
             audio_norm = torch.autograd.Variable(audio_norm, requires_grad=False)
             melspec = self.stft.mel_spectrogram(audio_norm)
+            # here melspec should be 4 dimensions
+            # but for tacotron2 they need it to be 3 dimensions
+            # we need it to be 4 dimensions for VQ VAE and VAE
             melspec = torch.squeeze(melspec, 0)
         else:
             melspec = torch.from_numpy(np.load(filename))
@@ -89,7 +136,10 @@ class TextMelCollate():
 
         # Right zero-pad mel-spec with extra single zero vector to mark the end
         num_mels = batch[0][1].size(0)
-        max_target_len = max([x[1].size(1) for x in batch]) + 1
+        # culprint of mismatch between input and target is the 
+        # hardcoded +1 at the end of this line
+        # max_target_len = max([x[1].size(1) for x in batch]) + 1
+        max_target_len = max([x[1].size(1) for x in batch])
         if max_target_len % self.n_frames_per_step != 0:
             max_target_len += self.n_frames_per_step - max_target_len % self.n_frames_per_step
             assert max_target_len % self.n_frames_per_step == 0
