@@ -17,6 +17,7 @@ from models import DefaultVAE, VAE, VQVAE
 from train import train, train_vae, train_vqvae
 from test import test, test_vae, test_vqvae
 from hparams import create_hparams
+from utils import to_device
 
 
 def parse_args():
@@ -50,7 +51,9 @@ def parse_args():
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     return args
 
-def save_checkpoint(args, state, filename='./models/{}/checkpoint.pth.tar'.format(args.model)):
+
+def save_checkpoint(args, state):
+    filename='./models/{}/checkpoint.pth.tar'.format(args.model)
     torch.save(state, filename)
     # if is_best:
         # shutil.copyfile(filename, './models/{}/model_best.pth.tar'.format(args.model))
@@ -126,7 +129,8 @@ def main():
             elif args.model == 'vqvae':
                 reconstruction, _, _ = model(sample)
             grid = make_grid(reconstruction.cpu(), nrow=8, range=(-1, 1), normalize=True)
-            save_image(grid, './results/sample_' + str(args.model) + str(epoch) + '.png')
+            save_image(grid, './results/sample_' + str(args.model)\
+                        + '_' + str(args._dataset) + '_' + str(epoch) + '.png')
         save_checkpoint(args, {
             'epoch': epoch + 1,
             'arch': args.model,

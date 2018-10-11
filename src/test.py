@@ -44,12 +44,12 @@ def test_vae(args, model, test_loader, device, epoch):
                 target = target.to(device)
                 loss = mse_loss(target, data, kl_d)
                 test_loss += loss.item()
-                if batch_idx == 0:
-                    n = min(data.size(0), 8)
-                    comparison = torch.cat([data[:n],
-                                          recon_batch.view(args.batch_size, 1, 28, 28)[:n]])
-                    save_image(comparison.cpu(),
-                             './results/reconstruction_' + str(epoch) + '.png', nrow=n)
+                # if batch_idx == 0:
+                    # n = min(data.size(0), 8)
+                    # comparison = torch.cat([data[:n],
+                                          # recon_batch.view(args.batch_size, 1, 28, 28)[:n]])
+                    # save_image(.cpu(),
+                             # './results/reconstruction_' + str(epoch) + '.png', nrow=n)
         else:
             for i, (data, _) in enumerate(test_loader):
                 data = data.to(device)
