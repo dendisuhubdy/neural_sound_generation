@@ -36,7 +36,7 @@ def test_vae(args, model, test_loader, device, epoch):
             for batch_idx, batch in enumerate(test_loader):
                 text_padded, input_lengths, mel_padded, \
                         gate_padded, output_lengths = batch
-                data = mel_padded
+                data = to_device(mel_padded, device).float()
                 data = data.to(device)
                 recon_batch, kl_d = model(data)
                 target = torch.zeros(data.size(0), data.size(1), data.size(2), data.size(3))
@@ -76,7 +76,7 @@ def test_vqvae(args, model, test_loader, device, epoch):
             for batch_idx, batch in enumerate(test_loader):
                 text_padded, input_lengths, mel_padded, \
                         gate_padded, output_lengths = batch
-                data = mel_padded
+                data = to_device(mel_padded, device).float()
                 data = data.to(device)
                 x_tilde, z_e_x, z_q_x = model(data)
                 target = torch.zeros(data.size(0), data.size(1), data.size(2), data.size(3))
