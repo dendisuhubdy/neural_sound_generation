@@ -50,6 +50,11 @@ def parse_args():
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     return args
 
+def save_checkpoint(args, state, filename='./models/{}/checkpoint.pth.tar'.format(args.model)):
+    torch.save(state, filename)
+    # if is_best:
+        # shutil.copyfile(filename, './models/{}/model_best.pth.tar'.format(args.model))
+
 
 def main():
     args = parse_args()
@@ -111,14 +116,22 @@ def main():
 
         with torch.no_grad():
             # sample = torch.randn(64, 1, 28, 28).to(device)
-            sample, _ = next(iter(test_loader))
+            # sample, _ = next(iter(test_loader))
+            text_padded, input_lengths, mel_padded, \
+                    gate_padded, output_lengths  = next(iter(test_loader))
+            # here we input mel padded into the model
+            sample = to_device(mel_padded, device).float()
             if args.model == 'vae':
                 reconstruction, _ = model(sample)
             elif args.model == 'vqvae':
                 reconstruction, _, _ = model(sample)
             grid = make_grid(reconstruction.cpu(), nrow=8, range=(-1, 1), normalize=True)
-            save_image(grid, './results/sample_' + str(epoch) + '.png')
-
+            save_image(grid, './results/sample_' + str(args.model) + str(epoch) + '.png')
+        save_checkpoint(args, {
+            'epoch': epoch + 1,
+            'arch': args.model,
+            'state_dict': model.state_dict(),
+            'optimizer' : optimizer.state_dict()})
 
 if __name__ == "__main__":
     main()
