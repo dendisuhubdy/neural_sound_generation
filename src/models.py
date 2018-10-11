@@ -94,9 +94,7 @@ class VAE(nn.Module):
 
         self.apply(weights_init)
 
-    def forward(self, x, input_lengths=None):
-        input_lengths = input_lengths.data
-        input_lengths = input_lengths.cpu().numpy()
+    def forward(self, x):
         # here for non-audio datasets like MNIST, CIFAR10
         # the input is variable in length so here 
         # do a padded packed sequence to make sure 
@@ -195,9 +193,7 @@ class VQVAE(nn.Module):
         x_tilde = self.decoder(z_q_x)
         return x_tilde
 
-    def forward(self, x, input_lengths=None):
-        input_lengths = input_lengths.data
-        input_lengths = input_lengths.cpu().numpy()
+    def forward(self, x):
         # here for non-audio datasets like MNIST, CIFAR10
         # the input is variable in length so here 
         # do a padded packed sequence to make sure 

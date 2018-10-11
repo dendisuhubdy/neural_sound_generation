@@ -46,12 +46,11 @@ def train_vae(args, model, optimizer, train_loader, device, epoch):
                     gate_padded, output_lengths = batch
             # here we input mel padded into the model
             data = to_device(mel_padded, device).float()
-            input_lengths = to_device(input_lengths, device).long()
             # max_len = int(torch.max(input_lengths.data).numpy())
             # print("============ Input data size =========")
             # print(data.size())
             optimizer.zero_grad()
-            recon_batch, kl_d = model(data, input_lengths)
+            recon_batch, kl_d = model(data)
             # hackish operation
             target = torch.zeros(data.size(0), data.size(1), data.size(2), data.size(3))
             target[:, :, :, :recon_batch.size(3)] = recon_batch
@@ -104,11 +103,10 @@ def train_vqvae(args, model, optimizer, train_loader, device, epoch):
                     gate_padded, output_lengths = batch
             # here we input mel padded into the model
             data = to_device(mel_padded, device).float()
-            input_lengths = to_device(input_lengths, device).long()
             # print("============ Input data size =========")
             # print(data.size())
             optimizer.zero_grad()
-            x_tilde, z_e_x, z_q_x = model(data, input_lengths)
+            x_tilde, z_e_x, z_q_x = model(data)
             # hackish operation
             target = torch.zeros(data.size(0), data.size(1), data.size(2), data.size(3))
             target[:, :, :, :x_tilde.size(3)] = x_tilde
