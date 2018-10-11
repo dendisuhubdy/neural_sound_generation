@@ -13,9 +13,9 @@ from torchvision.utils import save_image, make_grid
 
 from dataloader import (load_training_data, load_test_data,
                        prepare_dataloaders)
-from models import VAE, VQVAE
-from train import train_vae, train_vqvae
-from test import test_vae, test_vqvae
+from models import DefaultVAE, VAE, VQVAE
+from train import train, train_vae, train_vqvae
+from test import test, test_vae, test_vqvae
 from hparams import create_hparams
 
 
@@ -63,6 +63,7 @@ def main():
 
     if args.dataset == 'ljspeech':
         train_loader, test_loader, collate_fn = prepare_dataloaders(hparams)
+        # train_loader, test_loader = prepare_dataloaders(hparams)
 
     else:
         kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
@@ -81,6 +82,10 @@ def main():
         input_dim = 3
         dim = 256
         z_dim = 512
+    elif args.dataset == 'ljspeech':
+        input_dim = 1
+        dim = 256
+        z_dim = 128
     else:
         input_dim = 1
         dim = 256
@@ -88,6 +93,7 @@ def main():
 
     if args.model == 'vae':
         model = VAE(input_dim, dim, z_dim).to(device)
+        # model = DefaultVAE().to(device)
     elif args.model == 'vqvae':
         model = VQVAE(input_dim, dim, z_dim).to(device)
     print(model)

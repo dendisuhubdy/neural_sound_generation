@@ -46,15 +46,24 @@ def prepare_dataloaders(hparams):
 
     train_sampler = DistributedSampler(trainset) \
         if hparams.distributed_run else None
+    
+    val_sampler = DistributedSampler(valset) \
+        if hparams.distributed_run else None
 
-    train_loader = DataLoader(trainset, num_workers=1, shuffle=False,
+    train_loader = DataLoader(trainset,
+                              num_workers=1,
+                              shuffle=False,
                               sampler=train_sampler,
-                              batch_size=hparams.batch_size, pin_memory=False,
+                              batch_size=hparams.batch_size,
+                              pin_memory=False,
                               drop_last=True, collate_fn=collate_fn)
     # here you can just output the valset
     # or you can load it as a data loader
-    val_loader = DataLoader(valset, num_workers=1, shuffle=False,
-                            sampler=train_sampler,
-                            batch_size=hparams.batch_size, pin_memory=False,
+    val_loader = DataLoader(valset,
+                            num_workers=1,
+                            shuffle=False,
+                            sampler=val_sampler,
+                            batch_size=hparams.batch_size,
+                            pin_memory=False,
                             drop_last=True, collate_fn=collate_fn)
     return train_loader, val_loader, collate_fn

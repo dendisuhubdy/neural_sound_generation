@@ -32,6 +32,35 @@ def weights_init(m):
             print("Skipping initialization of ", classname)
 
 
+class DefaultVAE(nn.Module):
+    def __init__(self):
+        super(DefaultVAE, self).__init__()
+
+        self.fc1 = nn.Linear(784, 400)
+        self.fc21 = nn.Linear(400, 20)
+        self.fc22 = nn.Linear(400, 20)
+        self.fc3 = nn.Linear(20, 400)
+        self.fc4 = nn.Linear(400, 784)
+
+    def encode(self, x):
+        h1 = F.relu(self.fc1(x))
+        return self.fc21(h1), self.fc22(h1)
+
+    def reparameterize(self, mu, logvar):
+        std = torch.exp(0.5*logvar)
+        eps = torch.randn_like(std)
+        return eps.mul(std).add_(mu)
+
+    def decode(self, z):
+        h3 = F.relu(self.fc3(z))
+        return torch.sigmoid(self.fc4(h3))
+
+    def forward(self, x):
+        mu, logvar = self.encode(x.view(-1, 784))
+        z = self.reparameterize(mu, logvar)
+        return self.decode(z), mu, logvar
+
+
 class VAE(nn.Module):
     def __init__(self, input_dim, dim, z_dim):
         super(VAE, self).__init__()
@@ -65,14 +94,27 @@ class VAE(nn.Module):
 
         self.apply(weights_init)
 
-    def forward(self, x):
+    def forward(self, x, input_lengths=None):
+        input_lengths = input_lengths.data
+        input_lengths = input_lengths.cpu().numpy()
+        # here for non-audio datasets like MNIST, CIFAR10
+        # the input is variable in length so here 
+        # do a padded packed sequence to make sure 
+        # the length of inputs are the same shape
+        # x = nn.utils.rnn.pack_padded_sequence(
+                # x, input_lengths, batch_first=True)
         mu, logvar = self.encoder(x).chunk(2, dim=1)
+        # print("========= Encoder output ===========")
+        # print(mu.size())
 
         q_z_x = Normal(mu, logvar.mul(.5).exp())
         p_z = Normal(torch.zeros_like(mu), torch.ones_like(logvar))
         kl_div = kl_divergence(q_z_x, p_z).sum(1).mean()
 
         x_tilde = self.decoder(q_z_x.rsample())
+        #x_tilde = self.decoder(q_z_x)
+        # print("========= Encoder output ===========")
+        # print(x_tilde.size())
         return x_tilde, kl_div
 
 
@@ -93,7 +135,7 @@ class VQEmbedding(nn.Module):
         z_q_x = z_q_x_.permute(0, 3, 1, 2).contiguous()
 
         z_q_x_bar_flatten = torch.index_select(self.embedding.weight,
-            dim=0, index=indices)
+                                               dim=0, index=indices)
         z_q_x_bar_ = z_q_x_bar_flatten.view_as(z_e_x_)
         z_q_x_bar = z_q_x_bar_.permute(0, 3, 1, 2).contiguous()
 
@@ -153,10 +195,25 @@ class VQVAE(nn.Module):
         x_tilde = self.decoder(z_q_x)
         return x_tilde
 
-    def forward(self, x):
+    def forward(self, x, input_lengths=None):
+        input_lengths = input_lengths.data
+        input_lengths = input_lengths.cpu().numpy()
+        # here for non-audio datasets like MNIST, CIFAR10
+        # the input is variable in length so here 
+        # do a padded packed sequence to make sure 
+        # the length of inputs are the same shape
+        # x = nn.utils.rnn.pack_padded_sequence(
+                # x, input_lengths, batch_first=True)
         z_e_x = self.encoder(x)
+        # print("========= Encoder output ===========")
+        # print(z_e_x.size())
+        # also unpack it after the decoder
+        # z_e_x, _ = nn.utils.rnn.pad_packed_sequence(
+                        # z_e_x, batch_first=True)
         z_q_x_st, z_q_x = self.codebook.straight_through(z_e_x)
         x_tilde = self.decoder(z_q_x_st)
+        # print("========= Decoder output ===========")
+        # print(x_tilde.size())
         return x_tilde, z_e_x, z_q_x
 
 

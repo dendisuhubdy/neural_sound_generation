@@ -6,6 +6,7 @@ All rights reserved
 """
 # coding: utf-8
 from __future__ import with_statement, print_function, absolute_import
+import math
 import numpy as np
 from scipy import signal
 from scipy.io import wavfile
@@ -28,6 +29,13 @@ from torch.utils.data.sampler import Sampler
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
+
+def round_down(num, divisor):
+    return num - (num%divisor)
+
+
+def round_up(x):
+    return int(math.ceil(x / 10.0)) * 10
 
 def get_mask_from_lengths(lengths):
     max_len = torch.max(lengths)
@@ -53,9 +61,12 @@ def load_filepaths_and_text(filename, sort_by_length, split="|"):
     return filepaths_and_text
 
 
-# def to_gpu(x):
-    # x = x.contiguous().cuda(async=True)
-    # return torch.autograd.Variable(x)
+def to_device(x, device):
+    # unsqueeze might be the wrong
+    # approach here 
+    x = x.unsqueeze(1)
+    x = x.contiguous().to(device) #.cuda(async=True)
+    return torch.autograd.Variable(x)
 
 
 def load_wav(path, sample_rate):
