@@ -22,7 +22,7 @@ from utils import to_device
 
 def parse_args():
     parser = argparse.ArgumentParser(description='VAE MNIST Example')
-    parser.add_argument('--batch-size', type=int, default=256, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=16, metavar='N',
                         help='input batch size for training (default: 128)')
     parser.add_argument('--lr-rate', type=float, default=1e-3, metavar='N',
                         help='input batch size for training (default: 128)')
@@ -124,7 +124,7 @@ def main():
             sample, _ = next(iter(test_loader))
             grid = make_grid(sample.cpu(), nrow=8, range=(-1, 1), normalize=True)
             save_image(grid, './results/sample_' + str(args.model)\
-                        + '_' + str(args._dataset) + '_' + str(epoch) + '.png')
+                        + '_' + str(args.dataset) + '_' + str(epoch) + '.png')
             # text_padded, input_lengths, mel_padded, \
                     # gate_padded, output_lengths  = next(iter(test_loader))
             # # here we input mel padded into the model
