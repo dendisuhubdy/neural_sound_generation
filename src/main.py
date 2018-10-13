@@ -45,6 +45,10 @@ def parse_args():
     parser.add_argument('--beta', type=float, default=1.0,
                         help='contribution of commitment loss,\
                               between 0.1 and 2.0 (default: 1.0)')
+    parser.add_argument('--dim', type=int, default=256, metavar='S',
+                        help='hidden layer width')
+    parser.add_argument('--z-dim', type=int, default=128, metavar='S',
+                        help='hidden layer size')
     parser.add_argument('--hparams', type=str,
                         required=False, help='comma separated name=value pairs')
     args = parser.parse_args()
@@ -55,8 +59,6 @@ def parse_args():
 def save_checkpoint(args, state):
     filename='./models/{}/checkpoint.pth.tar'.format(args.model)
     torch.save(state, filename)
-    # if is_best:
-        # shutil.copyfile(filename, './models/{}/model_best.pth.tar'.format(args.model))
 
 
 def main():
@@ -83,27 +85,27 @@ def main():
     # here we can swap models to VAE, VQ-VAE, PixelCNN, PixelRNN
     if args.dataset == 'MNIST':
         input_dim = 1
-        dim = 256
-        z_dim = 128
+        # dim = 256
+        # z_dim = 128
 
     elif args.dataset == 'CIFAR10':
         input_dim = 3
-        dim = 256
-        z_dim = 512
+        # dim = 256
+        # z_dim = 512
     elif args.dataset == 'ljspeech':
         input_dim = 1
-        dim = 256
-        z_dim = 128
+        # dim = 256
+        # z_dim = 128
     else:
         input_dim = 1
-        dim = 256
-        z_dim = 128
+        # dim = 256
+        # z_dim = 128
 
     if args.model == 'vae':
-        model = VAE(input_dim, dim, z_dim).to(device)
+        model = VAE(input_dim, args.dim, args.z_dim).to(device)
         # model = DefaultVAE().to(device)
     elif args.model == 'vqvae':
-        model = VQVAE(input_dim, dim, z_dim).to(device)
+        model = VQVAE(input_dim, args.dim, args.z_dim).to(device)
     print(model)
 
     # setup optimizer as Adam
@@ -119,17 +121,20 @@ def main():
 
         with torch.no_grad():
             # sample = torch.randn(64, 1, 28, 28).to(device)
-            # sample, _ = next(iter(test_loader))
-            text_padded, input_lengths, mel_padded, \
-                    gate_padded, output_lengths  = next(iter(test_loader))
-            # here we input mel padded into the model
-            sample = to_device(mel_padded, device).float()
+            sample, _ = next(iter(test_loader))
+            grid = make_grid(sample.cpu(), nrow=8, range=(-1, 1), normalize=True)
+            save_image(grid, './results/sample_' + str(args.model)\
+                        + '_' + str(args._dataset) + '_' + str(epoch) + '.png')
+            # text_padded, input_lengths, mel_padded, \
+                    # gate_padded, output_lengths  = next(iter(test_loader))
+            # # here we input mel padded into the model
+            # sample = to_device(mel_padded, device).float()
             if args.model == 'vae':
                 reconstruction, _ = model(sample)
             elif args.model == 'vqvae':
                 reconstruction, _, _ = model(sample)
             grid = make_grid(reconstruction.cpu(), nrow=8, range=(-1, 1), normalize=True)
-            save_image(grid, './results/sample_' + str(args.model)\
+            save_image(grid, './results/reconstruction_' + str(args.model)\
                         + '_' + str(args._dataset) + '_' + str(epoch) + '.png')
         save_checkpoint(args, {
             'epoch': epoch + 1,
