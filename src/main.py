@@ -57,7 +57,7 @@ def parse_args():
 
 
 def save_checkpoint(args, state):
-    filename='./models/{}/checkpoint.pth.tar'.format(args.model)
+    filename = './models/{}/checkpoint_{}.pth.tar'.format(args.model, args.dataset)
     torch.save(state, filename)
 
 
