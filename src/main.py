@@ -22,7 +22,7 @@ from utils import to_device
 
 def parse_args():
     parser = argparse.ArgumentParser(description='VAE MNIST Example')
-    parser.add_argument('--batch-size', type=int, default=16, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 128)')
     parser.add_argument('--lr-rate', type=float, default=1e-3, metavar='N',
                         help='input batch size for training (default: 128)')
@@ -135,7 +135,7 @@ def main():
                 reconstruction, _, _ = model(sample)
             grid = make_grid(reconstruction.cpu(), nrow=8, range=(-1, 1), normalize=True)
             save_image(grid, './results/reconstruction_' + str(args.model)\
-                        + '_' + str(args._dataset) + '_' + str(epoch) + '.png')
+                        + '_' + str(args.dataset) + '_' + str(epoch) + '.png')
         save_checkpoint(args, {
             'epoch': epoch + 1,
             'arch': args.model,
