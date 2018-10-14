@@ -5,7 +5,7 @@ All rights reserved
 
 """
 import argparse
-
+import os
 import torch
 from torch import nn, optim
 from torchvision import datasets, transforms
@@ -28,8 +28,12 @@ def parse_args():
                         help='input batch size for training (default: 128)')
     parser.add_argument('--dataset', type=str, default='MNIST', metavar='N',
                         help='dataset for training')
-    parser.add_argument('--datadir', type=str, default='./data/', metavar='N',
+    parser.add_argument('--datadir', type=str,
+                        default='./data/', metavar='N',
                         help='dataset directory for training')
+    parser.add_argument('--sampledir', type=str,
+                        default='/data/milatmp1/suhubdyd/vae_samples/', metavar='N',
+                        help='sample directories')
     # remember to execute
     # `sed -i -- 's,DUMMY,ljs_dataset_folder/wavs,g' filelists/*.txt`
     parser.add_argument('--epochs', type=int, default=100, metavar='N',
@@ -133,17 +137,19 @@ def main():
             elif args.model == 'vqvae':
                 reconstruction, _, _ = model(sample)
             grid_samples = make_grid(sample.cpu(), nrow=8, range=(-1, 1), normalize=True)
-            save_image(grid_samples, '/data/milatmp1/suhubdyd/vae_samples/sample_' + str(args.model)\
+            save_image(grid_samples, os.path.join(args.sampledir, format(args.dataset),\
+                        'samples_' + str(args.model)\
                         + '_data_' + str(args.dataset)\
                         + '_dim_' + str(args.dim)\
                         + '_z_dim_' + str(args.z_dim)\
-                        + '_epoch_' + str(epoch) + '.png')
+                        + '_epoch_' + str(epoch) + '.png'))
             grid_reconstruction = make_grid(reconstruction.cpu(), nrow=8, range=(-1, 1), normalize=True)
-            save_image(grid_reconstruction, '/data/milatmp1/suhubdyd/vae_samples/reconstruction_' + str(args.model)\
+            save_image(grid_reconstruction, os.path.join(args.sampledir, format(args.dataset),\
+                        'reconstruction_' + str(args.model)\
                         + '_data_' + str(args.dataset)\
                         + '_dim_' + str(args.dim)\
                         + '_z_dim_' + str(args.z_dim)\
-                        + '_epoch_' + str(epoch) + '.png')
+                        + '_epoch_' + str(epoch) + '.png'))
         save_checkpoint(args, {
             'epoch': epoch + 1,
             'arch': args.model,
