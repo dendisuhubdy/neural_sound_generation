@@ -143,12 +143,12 @@ def train_vqvae(args, model, optimizer, train_loader, device, epoch):
     else:
         for batch_idx, (data, _) in enumerate(train_loader):
             data = data.to(device)
-            print("============ Input data size =========")
-            print(data.size())
+            # print("============ Input data size =========")
+            # print(data.size())
             optimizer.zero_grad()
             x_tilde, z_e_x, z_q_x = model(data)
-            print("============ Output data size =========")
-            print(x_tilde.size())
+            # print("============ Output data size =========")
+            # print(x_tilde.size())
             # Reconstruction loss
             loss_recons = F.mse_loss(x_tilde, data)
             # Vector quantization objective

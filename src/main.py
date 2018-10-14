@@ -122,20 +122,28 @@ def main():
         with torch.no_grad():
             # sample = torch.randn(64, 1, 28, 28).to(device)
             sample, _ = next(iter(test_loader))
-            grid = make_grid(sample.cpu(), nrow=8, range=(-1, 1), normalize=True)
-            save_image(grid, './results/sample_' + str(args.model)\
-                        + '_' + str(args.dataset) + '_' + str(epoch) + '.png')
+            sample = sample.to(device)
             # text_padded, input_lengths, mel_padded, \
                     # gate_padded, output_lengths  = next(iter(test_loader))
             # # here we input mel padded into the model
             # sample = to_device(mel_padded, device).float()
+            print("Evaluating samples")
             if args.model == 'vae':
                 reconstruction, _ = model(sample)
             elif args.model == 'vqvae':
                 reconstruction, _, _ = model(sample)
-            grid = make_grid(reconstruction.cpu(), nrow=8, range=(-1, 1), normalize=True)
-            save_image(grid, './results/reconstruction_' + str(args.model)\
-                        + '_' + str(args.dataset) + '_' + str(epoch) + '.png')
+            grid_samples = make_grid(sample.cpu(), nrow=8, range=(-1, 1), normalize=True)
+            save_image(grid_samples, '/data/milatmp1/suhubdyd/vae_samples/sample_' + str(args.model)\
+                        + '_data_' + str(args.dataset)\
+                        + '_dim_' + str(args.dim)\
+                        + '_z_dim_' + str(args.z_dim)\
+                        + '_epoch_' + str(epoch) + '.png')
+            grid_reconstruction = make_grid(reconstruction.cpu(), nrow=8, range=(-1, 1), normalize=True)
+            save_image(grid_reconstruction, '/data/milatmp1/suhubdyd/vae_samples/reconstruction_' + str(args.model)\
+                        + '_data_' + str(args.dataset)\
+                        + '_dim_' + str(args.dim)\
+                        + '_z_dim_' + str(args.z_dim)\
+                        + '_epoch_' + str(epoch) + '.png')
         save_checkpoint(args, {
             'epoch': epoch + 1,
             'arch': args.model,
