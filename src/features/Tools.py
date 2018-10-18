@@ -26,6 +26,8 @@ import multiprocessing
 from multiprocessing import Pool
 import functools
 import time
+from PIL import Image
+
 try:
     import urllib.request as urllib  # for backwards compatibility
 except ImportError:
@@ -640,7 +642,7 @@ def voiced_unvoiced(X, window_size=256, window_step=128, copy=True):
     period = np.zeros((n_windows, 1))
     for window in range(max(n_windows - 1, 1)):
         XX = X.ravel()[window * window_step + np.arange(window_size)]
-        XX *= sg.hamming(len(XX))
+        XX *= sg.windows.hann(len(XX))
         XX = sg.lfilter(b, a, XX)
         left_max = np.max(np.abs(XX[:len(XX) // 3]))
         right_max = np.max(np.abs(XX[-len(XX) // 3:]))
@@ -746,7 +748,7 @@ def lpc_analysis(X, order=8, window_step=128, window_size=2 * 128,
     for window in range(max(n_windows - 1, 1)):
         wtws = int(window * window_step)
         XX = X.ravel()[wtws + np.arange(window_size, dtype="int32")]
-        WXX = XX * sg.hanning(window_size)
+        WXX = XX * sg.windows.hann(window_size)
         autocorr_X[window] = np.correlate(WXX, WXX, mode='full')
         center = np.argmax(autocorr_X[window])
         RXX = autocorr_X[window,
@@ -918,7 +920,7 @@ def lpc_synthesis(lp_coefficients, per_frame_gain, residual_excitation=None,
         residual_excitation = np.zeros((n_excitation_points))
         f, m = lpc_to_frequency(lp_coefficients, per_frame_gain)
         t = np.linspace(0, 1, window_size, endpoint=False)
-        hanning = sg.hanning(window_size)
+        hanning = sg.windows.hann(window_size)
         for window in range(n_windows):
             window_base = window * window_step
             index = window_base + np.arange(window_size)
@@ -953,7 +955,7 @@ def lpc_synthesis(lp_coefficients, per_frame_gain, residual_excitation=None,
                                       residual_excitation[index])
         synthesized[index] = np.hstack((oldbit, np.zeros(
             (window_size - window_step))))
-        synthesized[index] += sg.hanning(window_size) * newbit
+        synthesized[index] += sg.windows.hann(window_size) * newbit
     synthesized = sg.lfilter([1], [1, -emphasis], synthesized)
     return synthesized
 
@@ -1096,7 +1098,7 @@ def sinusoid_analysis(X, input_sample_rate, resample_block=128, copy=True):
             raise ValueError("Input sample rate must be a multiple of 8k!")
         # Should be able to use resample... ?
         # resampled_count = round(len(X) * resample_to / input_sample_rate)
-        # X = sg.resample(X, resampled_count, window=sg.hanning(len(X)))
+        # X = sg.resample(X, resampled_count, window=sg.windows.hann(len(X)))
         X = sg.decimate(X, input_sample_rate // resample_to, zero_phase=True)
     step_size = 2 * round(resample_block / input_sample_rate * resample_to / 2.)
     a, g, e = lpc_analysis(X, order=8, window_step=step_size,
@@ -3566,7 +3568,7 @@ def run_lpc_example():
     # Partially following the formant tutorial here
     # http://www.mathworks.com/help/signal/ug/formant-estimation-with-lpc-coefficients.html
 
-    samplerate, X = fetch_sample_music()
+    samplerate, X = wavfile.read('./LJ001-0001.wav') #fetch_sample_music()
 
     c = overlap_dct_compress(X, 200, 400)
     X_r = overlap_dct_uncompress(c, 400)
@@ -3606,6 +3608,9 @@ def run_lpc_example():
                 overlap_excitation = overlap_dct_uncompress(co,
                                                         window_size=window_step)
                 a_r = lsf_to_lpc(lsf)
+                from PIL import Image
+                img = Image.fromarray(np.transpose(a_r), 'RGB')
+                img.save('./lpc.png')
                 f, m = lpc_to_frequency(a_r, g)
                 block_lpc = lpc_synthesis(a_r, g, block_excitation,
                                           emphasis=0.9,
@@ -3780,7 +3785,8 @@ def run_dct_vq_example():
 
 
 def run_phase_reconstruction_example():
-    fs, d = fetch_sample_speech_tapestry()
+    # fs, d = fetch_sample_speech_tapestry()
+    fs, d = fetch_sample_file('./LJ001-0001.wav') #fetch_sample_music()
     # actually gives however many components you say! So double what .m file
     # says
     fftsize = 512
@@ -3788,6 +3794,8 @@ def run_phase_reconstruction_example():
     X_s = np.abs(stft(d, fftsize=fftsize, step=step, real=False,
                       compute_onesided=False))
     X_t = iterate_invert_spectrogram(X_s, fftsize, step, verbose=True)
+    # img = Image.fromarray(np.transpose(X_s))
+    # img.save('./wav_spectogram.png')
 
     """
     import matplotlib.pyplot as plt
@@ -4102,11 +4110,11 @@ if __name__ == "__main__":
     # run_world_mgc_example()
     # run_world_example()
     # run_mgc_example()
-    # run_phase_reconstruction_example()
+    run_phase_reconstruction_example()
     # run_phase_vq_example()
     # run_dct_vq_example()
     # run_fft_vq_example()
-    run_lpc_example()
+    # run_lpc_example()
     # run_cqt_example()
     # run_fft_dct_example()
     # test_all()
