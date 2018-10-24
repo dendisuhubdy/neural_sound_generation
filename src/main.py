@@ -17,7 +17,7 @@ from models import DefaultVAE, VAE, VQVAE
 from train import train, train_vae, train_vqvae
 from test import test, test_vae, test_vqvae
 from hparams import create_hparams
-from utils import to_device
+from utils import unsqueeze_to_device
 
 
 def parse_args():
@@ -130,7 +130,7 @@ def main():
             # text_padded, input_lengths, mel_padded, \
                     # gate_padded, output_lengths  = next(iter(test_loader))
             # # here we input mel padded into the model
-            # sample = to_device(mel_padded, device).float()
+            # sample = unsqueeze_to_device(mel_padded, device).float()
             print("Evaluating samples")
             if args.model == 'vae':
                 reconstruction, _ = model(sample)

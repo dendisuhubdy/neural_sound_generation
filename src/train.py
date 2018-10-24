@@ -10,7 +10,7 @@ from torch.distributions.normal import Normal
 
 from loss import binary_cross_entropy, mse_loss
 from models import to_scalar
-from utils import to_device
+from utils import unsqueeze_to_device
 
 
 def train(args, model, optimizer, train_loader, device, epoch):
@@ -20,7 +20,7 @@ def train(args, model, optimizer, train_loader, device, epoch):
         text_padded, input_lengths, mel_padded, \
                 gate_padded, output_lengths = batch
         # here we input mel padded into the model
-        data = to_device(mel_padded, device).float()
+        data = unsqueeze_to_device(mel_padded, device).float()
         optimizer.zero_grad()
         recon_batch, mu, logvar = model(data)
         loss = binary_cross_entropy(recon_batch, data, mu, logvar)
@@ -45,7 +45,7 @@ def train_vae(args, model, optimizer, train_loader, device, epoch):
             text_padded, input_lengths, mel_padded, \
                     gate_padded, output_lengths = batch
             # here we input mel padded into the model
-            data = to_device(mel_padded, device).float()
+            data = unsqueeze_to_device(mel_padded, device).float()
             # max_len = int(torch.max(input_lengths.data).numpy())
             # print("============ Input data size =========")
             # print(data.size())
@@ -102,7 +102,7 @@ def train_vqvae(args, model, optimizer, train_loader, device, epoch):
             text_padded, input_lengths, mel_padded, \
                     gate_padded, output_lengths = batch
             # here we input mel padded into the model
-            data = to_device(mel_padded, device).float()
+            data = unsqueeze_to_device(mel_padded, device).float()
             # print("============ Input data size =========")
             # print(data.size())
             optimizer.zero_grad()

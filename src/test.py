@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 from loss import binary_cross_entropy, mse_loss
 from models import to_scalar
-from utils import to_device
+from utils import unsqueeze_to_device
 
 
 def test(args, model, test_loader, device, epoch):
@@ -14,7 +14,7 @@ def test(args, model, test_loader, device, epoch):
         for i, batch in enumerate(test_loader):
             text_padded, input_lengths, mel_padded, \
                     gate_padded, output_lengths = batch
-            data = to_device(mel_padded, device).float()
+            data = unsqueeze_to_device(mel_padded, device).float()
             recon_batch, mu, logvar = model(data)
             test_loss += binary_cross_entropy(recon_batch, data, mu, logvar).item()
             if i == 0:
@@ -36,7 +36,7 @@ def test_vae(args, model, test_loader, device, epoch):
             for batch_idx, batch in enumerate(test_loader):
                 text_padded, input_lengths, mel_padded, \
                         gate_padded, output_lengths = batch
-                data = to_device(mel_padded, device).float()
+                data = unsqueeze_to_device(mel_padded, device).float()
                 data = data.to(device)
                 recon_batch, kl_d = model(data)
                 target = torch.zeros(data.size(0), data.size(1), data.size(2), data.size(3))
@@ -76,7 +76,7 @@ def test_vqvae(args, model, test_loader, device, epoch):
             for batch_idx, batch in enumerate(test_loader):
                 text_padded, input_lengths, mel_padded, \
                         gate_padded, output_lengths = batch
-                data = to_device(mel_padded, device).float()
+                data = unsqueeze_to_device(mel_padded, device).float()
                 data = data.to(device)
                 x_tilde, z_e_x, z_q_x = model(data)
                 target = torch.zeros(data.size(0), data.size(1), data.size(2), data.size(3))
