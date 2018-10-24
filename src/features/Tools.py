@@ -8,11 +8,11 @@
 from __future__ import division
 import numpy as np
 import scipy as sp
-from numpy.lib.stride_tricks import as_strided
 import scipy.signal as sg
-from scipy.interpolate import interp1d
 import wave
 from scipy.cluster.vq import vq
+from scipy.interpolate import interp1d
+from numpy.lib.stride_tricks import as_strided
 from scipy import linalg, fftpack
 from numpy.testing import assert_almost_equal
 from scipy.linalg import svd
@@ -674,7 +674,7 @@ def voiced_unvoiced(X, window_size=256, window_step=128, copy=True):
             period[window] = 0
     return np.array(voiced_unvoiced), np.array(period)
 
-
+# TODO: make sure we don't use any residual excitation
 def lpc_analysis(X, order=8, window_step=128, window_size=2 * 128,
                  emphasis=0.9, voiced_start_threshold=.9,
                  voiced_stop_threshold=.6, truncate=False, copy=True):
@@ -3562,29 +3562,34 @@ def test_all():
     test_mdct_and_inverse()
 
 
-def run_lpc_example():
+def run_lpc_example(sinusoid_sample_rate, num_components, overall_window_size,
+                    lpc_coefficients):
     # ae.wav is from
     # http://www.linguistics.ucla.edu/people/hayes/103/Charts/VChart/ae.wav
     # Partially following the formant tutorial here
     # http://www.mathworks.com/help/signal/ug/formant-estimation-with-lpc-coefficients.html
 
-    samplerate, X = wavfile.read('./LJ001-0001.wav') #fetch_sample_music()
+    samplerate, X = wavfile.read('./results/LJ001-0001.wav') #fetch_sample_music()
 
-    c = overlap_dct_compress(X, 200, 400)
-    X_r = overlap_dct_uncompress(c, 400)
-    wavfile.write('lpc_uncompress.wav', samplerate, soundsc(X_r))
+    # compress c
+    c = overlap_dct_compress(X, num_components, overall_window_size) # components, window_size
+    # uncompress
+    X_r = overlap_dct_uncompress(c, overall_window_size)
+    # write this uncompressed form
+    wavfile.write('./results/lpc_uncompress.wav', samplerate, soundsc(X_r))
 
     print("Calculating sinusoids")
-    f_hz, m = sinusoid_analysis(X, input_sample_rate=16000)
+    f_hz, m = sinusoid_analysis(X, input_sample_rate=sinusoid_sample_rate)
     Xs_sine = sinusoid_synthesis(f_hz, m)
-    orig_fname = 'lpc_orig.wav'
-    sine_fname = 'lpc_sine_synth.wav'
+    orig_fname = "./results/lpc_orig_{}.wav".format(overall_window_size)
+    sine_fname = "./results/lpc_sine_synth_{}.wav".format(overall_window_size)
     wavfile.write(orig_fname, samplerate, soundsc(X))
     wavfile.write(sine_fname, samplerate, soundsc(Xs_sine))
 
-    lpc_order_list = [8, ]
-    dct_components_list = [200, ]
-    window_size_list = [400, ]
+    # lpc_order_list = [8, ]
+    lpc_order_list = [2, 4, 6, 8] #[lpc_coefficients, ]
+    dct_components_list = [50, 100, 150, 200] ##[num_components, ]
+    window_size_list = [100, 200, 300, 400] #[overall_window_size, ]
     # Seems like a dct component size of ~2/3rds the step
     # (1/3rd the window for 50% overlap) works well.
     for lpc_order in lpc_order_list:
@@ -3607,11 +3612,14 @@ def run_lpc_example():
                 block_excitation = dct_uncompress(c, window_size=window_step)
                 overlap_excitation = overlap_dct_uncompress(co,
                                                         window_size=window_step)
+                # compute lpc
                 a_r = lsf_to_lpc(lsf)
-                from PIL import Image
-                img = Image.fromarray(np.transpose(a_r), 'RGB')
-                img.save('./lpc.png')
+                # from PIL import Image
+                # img = Image.fromarray(np.transpose(a_r), 'RGB')
+                # img.save('./lpc.png')
+                # compute frequency
                 f, m = lpc_to_frequency(a_r, g)
+                # compute synthesis
                 block_lpc = lpc_synthesis(a_r, g, block_excitation,
                                           emphasis=0.9,
                                           window_step=window_step)
@@ -3625,11 +3633,11 @@ def run_lpc_example():
                                           window_step=window_step)
                 if dct_components is None:
                     dct_components = window_size
-                noisy_fname = 'lpc_noisy_synth_%iwin_%ilpc_%idct.wav' % (
+                noisy_fname = './results/lpc_noisy_synth_%iwin_%ilpc_%idct.wav' % (
                     window_size, lpc_order, dct_components)
-                block_fname = 'lpc_block_synth_%iwin_%ilpc_%idct.wav' % (
+                block_fname = './results/lpc_block_synth_%iwin_%ilpc_%idct.wav' % (
                     window_size, lpc_order, dct_components)
-                overlap_fname = 'lpc_overlap_synth_%iwin_%ilpc_%idct.wav' % (
+                overlap_fname = './results/lpc_overlap_synth_%iwin_%ilpc_%idct.wav' % (
                     window_size, lpc_order, dct_components)
                 wavfile.write(noisy_fname, samplerate, soundsc(noisy_lpc))
                 wavfile.write(block_fname, samplerate,
@@ -4110,11 +4118,11 @@ if __name__ == "__main__":
     # run_world_mgc_example()
     # run_world_example()
     # run_mgc_example()
-    run_phase_reconstruction_example()
+    # run_phase_reconstruction_example()
     # run_phase_vq_example()
     # run_dct_vq_example()
     # run_fft_vq_example()
-    # run_lpc_example()
+    run_lpc_example(16000, 200, 400, 8)
     # run_cqt_example()
     # run_fft_dct_example()
     # test_all()
