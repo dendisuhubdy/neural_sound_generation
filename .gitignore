@@ -3,6 +3,7 @@
 ### Data ####
 data/*
 results/*
+src/features/results/*
 
 ### C ###
 # Prerequisites
