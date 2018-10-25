@@ -10,6 +10,18 @@ import numpy as np
 import scipy as sp
 import scipy.signal as sg
 import wave
+import sys
+import zipfile
+import tarfile
+import os
+import copy
+import multiprocessing
+import functools
+import time
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
 from scipy.cluster.vq import vq
 from scipy.interpolate import interp1d
 from numpy.lib.stride_tricks import as_strided
@@ -18,15 +30,7 @@ from numpy.testing import assert_almost_equal
 from scipy.linalg import svd
 from scipy.io import wavfile
 from scipy.signal import firwin
-import zipfile
-import tarfile
-import os
-import copy
-import multiprocessing
 from multiprocessing import Pool
-import functools
-import time
-from PIL import Image
 
 try:
     import urllib.request as urllib  # for backwards compatibility
@@ -170,8 +174,8 @@ def fetch_sample_speech_eustace(n_samples=None):
     return fs, speech
 
 
-def stft(X, fftsize=128, step="half", mean_normalize=True, real=False,
-         compute_onesided=True):
+def stft(X, fftsize=128, step="half",
+         mean_normalize=True, real=False, compute_onesided=True):
     """
     Compute STFT for 1D real valued input X
     """
@@ -353,9 +357,11 @@ def nsgcwin(fmin, fmax, n_bins, fs, signal_len, gamma):
 
     for kk in [0, fbas_len + 1]:
         if M[kk] > M[kk + 1]:
-            multiscale[kk] = np.ones(M[kk]).astype(multiscale[0].dtype)
-            i1 = np.floor(M[kk] / 2) - np.floor(M[kk + 1] / 2)
-            i2 = np.floor(M[kk] / 2) + np.ceil(M[kk + 1] / 2)
+            # print(kk)
+            # print(multiscale[0])
+            multiscale[kk] = np.ones(M[kk]) #.astype(multiscale[0].dtype)
+            i1 = np.floor(int(M[kk] / 2)) - np.floor(int(M[kk + 1] / 2))
+            i2 = np.floor(int(M[kk] / 2)) + np.ceil(int(M[kk + 1] / 2))
             # Very rarely, gets an off by 1 error? Seems to be at the end...
             # for now, slice
             multiscale[kk][i1:i2] = _win(M[kk + 1])
@@ -3398,6 +3404,7 @@ def _mgc_convert(c_i, alpha, gamma, fftlen):
 def mgc2sp(mgc_arr, alpha=0.35, gamma=-0.41, fftlen="auto", fs=None,
         mode="world_pad", verbose=False):
     """
+    MGC to Spectrogram
     Accepts 1D or 2D array of mgc
     If 2D, assume time is on axis 0
     Returns reconstructed smooth spectrum
@@ -3419,6 +3426,7 @@ def mgc2sp(mgc_arr, alpha=0.35, gamma=-0.41, fftlen="auto", fs=None,
         c = _mgc_mgc2mgc(mgc_arr, alpha, gamma, fftlen // 2, 0., 0.)
         buf = np.zeros((fftlen,), dtype=c.dtype)
         buf[:len(c)] = c[:]
+        # return spectrogram for 1D case
         return np.fft.rfft(buf)
     else:
         # Slooow, use multiprocessing to speed up a bit
@@ -3463,7 +3471,9 @@ def mgc2sp(mgc_arr, alpha=0.35, gamma=-0.41, fftlen="auto", fs=None,
         c = np.array(final)
         buf = np.zeros((len(c), fftlen), dtype=c.dtype)
         buf[:, :c.shape[1]] = c[:]
-        return np.exp(np.fft.rfft(buf, axis=-1).real)
+        # return spectrogram for 2D case
+        spectrogram = np.exp(np.fft.rfft(buf, axis=-1).real)
+        return spectrogram
 
 
 def implot(arr, scale=None, title="", cmap="gray"):
@@ -3562,14 +3572,14 @@ def test_all():
     test_mdct_and_inverse()
 
 
-def run_lpc_example(sinusoid_sample_rate, num_components, overall_window_size,
+def run_lpc_example(audiofile, sinusoid_sample_rate, num_components, overall_window_size,
                     lpc_coefficients):
     # ae.wav is from
     # http://www.linguistics.ucla.edu/people/hayes/103/Charts/VChart/ae.wav
     # Partially following the formant tutorial here
     # http://www.mathworks.com/help/signal/ug/formant-estimation-with-lpc-coefficients.html
 
-    samplerate, X = wavfile.read('./results/LJ001-0001.wav') #fetch_sample_music()
+    samplerate, X = wavfile.read(audiofile) #fetch_sample_music()
 
     # compress c
     c = overlap_dct_compress(X, num_components, overall_window_size) # components, window_size
@@ -3587,9 +3597,9 @@ def run_lpc_example(sinusoid_sample_rate, num_components, overall_window_size,
     wavfile.write(sine_fname, samplerate, soundsc(Xs_sine))
 
     # lpc_order_list = [8, ]
-    lpc_order_list = [2, 4, 6, 8] #[lpc_coefficients, ]
-    dct_components_list = [50, 100, 150, 200] ##[num_components, ]
-    window_size_list = [100, 200, 300, 400] #[overall_window_size, ]
+    lpc_order_list = [2, 4, 6, 8] # #[lpc_coefficients, ]
+    dct_components_list = [num_components, ] ##[num_components, ]
+    window_size_list = [overall_window_size, ] #[overall_window_size, ]
     # Seems like a dct component size of ~2/3rds the step
     # (1/3rd the window for 50% overlap) works well.
     for lpc_order in lpc_order_list:
@@ -3792,39 +3802,51 @@ def run_dct_vq_example():
     wavfile.write("dct_vq_test_agc.wav", fs, soundsc(agc_vq_d2))
 
 
-def run_phase_reconstruction_example():
+def run_phase_reconstruction_example(audiofile, fftsize=512, step=64):
     # fs, d = fetch_sample_speech_tapestry()
-    fs, d = fetch_sample_file('./LJ001-0001.wav') #fetch_sample_music()
+    fs, d = fetch_sample_file(audiofile) #fetch_sample_music()
+    print(fs)
     # actually gives however many components you say! So double what .m file
     # says
-    fftsize = 512
-    step = 64
-    X_s = np.abs(stft(d, fftsize=fftsize, step=step, real=False,
+    # fftsize = 512
+    # step = 64
+    X_s = np.abs(stft(d,
+                      fftsize=fftsize,
+                      step=step,
+                      real=False,
                       compute_onesided=False))
-    X_t = iterate_invert_spectrogram(X_s, fftsize, step, verbose=True)
-    # img = Image.fromarray(np.transpose(X_s))
-    # img.save('./wav_spectogram.png')
+    print(f"Convert to spectrogram fftsize {fftsize} step {step}")
+    print(X_s)
+    X_t = iterate_invert_spectrogram(X_s,
+                                     fftsize,
+                                     step,
+                                     verbose=True)
+    print(f"Spectrogram inverted reconstruction using Griffin Lim\
+            fftsize {fftsize} step {step}")
+    print(X_t)
 
-    """
-    import matplotlib.pyplot as plt
-    plt.specgram(d, cmap="gray")
-    plt.savefig("1.png")
-    plt.close()
-    plt.imshow(X_s, cmap="gray")
-    plt.savefig("2.png")
-    plt.close()
-    """
+    # import matplotlib.pyplot as plt
+    # plt.specgram(d, cmap="gray")
+    # plt.savefig("./1.png")
+    # plt.close()
+    # plt.imshow(X_s, cmap="gray")
+    # plt.savefig("./2.png")
+    # plt.close()
+    freq = int(fs/fftsize)
+    overlap = (fftsize-step)/fftsize
+    # orig_fname = "./results/melspec_original_freqwindow_{}_overlap_{}.wav".format(freq, overlap)
+    recon_fname = "./results/melspec_recon_freqwindow_{}_overlap_{}.wav".format(freq, overlap)
 
-    wavfile.write("phase_original.wav", fs, soundsc(d))
-    wavfile.write("phase_reconstruction.wav", fs, soundsc(X_t))
+    # wavfile.write(orig_fname, fs, soundsc(d))
+    wavfile.write(recon_fname, fs, soundsc(X_t))
 
 
-def run_phase_vq_example():
+def run_phase_vq_example(audiofile, n_fft=256, step=32):
     def _pre(list_of_data):
         # Temporal window setting is crucial! - 512 seems OK for music, 256
         # fruit perhaps due to samplerates
-        n_fft = 256
-        step = 32
+        # n_fft = 256
+        # step = 32
         f_r = np.vstack([np.abs(stft(dd, n_fft, step=step, real=False,
                                 compute_onesided=False))
                          for dd in list_of_data])
@@ -3846,11 +3868,12 @@ def run_phase_vq_example():
 
     random_state = np.random.RandomState(1999)
 
-    fs, d = fetch_sample_speech_fruit()
+    # fs, d = fetch_sample_speech_fruit()
+    fs, d = fetch_sample_file(audiofile) #fetch_sample_music()
     d1 = d[::9]
     d2 = d[7::8][:5]
     # make sure d1 and d2 aren't the same!
-    assert [len(di) for di in d1] != [len(di) for di in d2]
+    # assert [len(di) for di in d1] != [len(di) for di in d2]
 
     clusters = preprocess_train(d1, random_state)
     fix_d1 = np.concatenate(d1)
@@ -3864,41 +3887,44 @@ def run_phase_vq_example():
     agc_d2, freq_d2, energy_d2 = time_attack_agc(fix_d2, fs, .5, 5)
     agc_vq_d2, freq_vq_d2, energy_vq_d2 = time_attack_agc(vq_d2, fs, .5, 5)
 
-    """
-    import matplotlib.pyplot as plt
-    plt.specgram(agc_vq_d2, cmap="gray")
-    #plt.title("Fake")
-    plt.figure()
-    plt.specgram(agc_d2, cmap="gray")
-    #plt.title("Real")
-    plt.show()
-    """
+    # import matplotlib.pyplot as plt
+    # plt.specgram(agc_vq_d2, cmap="gray")
+    # plt.title("Fake")
+    # plt.figure()
+    # plt.specgram(agc_d2, cmap="gray")
+    # plt.title("Real")
+    # plt.savefig("./specgram.png")
+    # plt.close()
 
-    wavfile.write("phase_train_agc.wav", fs, soundsc(agc_d1))
-    wavfile.write("phase_test_agc.wav", fs, soundsc(agc_d2))
-    wavfile.write("phase_vq_test_agc.wav", fs, soundsc(agc_vq_d2))
+    wavfile.write("./results/phase_train_agc.wav", fs, soundsc(agc_d1))
+    wavfile.write("./results/phase_test_agc.wav", fs, soundsc(agc_d2))
+    wavfile.write("./results/phase_vq_test_agc.wav", fs, soundsc(agc_vq_d2))
 
 
-def run_cqt_example():
-    try:
-        fs, d = fetch_sample_file("/Users/User/cqt_resources/kempff1.wav")
-    except ValueError:
-        print("WARNING: Using sample music instead but kempff1.wav is the example")
-        fs, d = fetch_sample_music()
-    X = d[:44100]
+def run_cqt_example(audiofile, fmax=44100):
+    # try:
+        # fs, d = fetch_sample_file("/Users/User/cqt_resources/kempff1.wav")
+    # except ValueError:
+        # print("WARNING: Using sample music instead but kempff1.wav is the example")
+        # fs, d = fetch_sample_music()
+    print("Running CQT example")
+    fs, d = fetch_sample_file(audiofile)
+    X = d[:fmax]
+    print("doing CQT feature extraction")
     X_cq, c_dc, c_nyq, multiscale, shift, window_lens = cqt(X, fs)
+    print(window_lens)
+    print(shift)
+    print("doing CQT inverse to speech")
     X_r = icqt(X_cq, c_dc, c_nyq, multiscale, shift, window_lens)
     SNR = 20 * np.log10(np.linalg.norm(X - X_r) / np.linalg.norm(X))
-    wavfile.write("cqt_original.wav", fs, soundsc(X))
-    wavfile.write("cqt_reconstruction.wav", fs, soundsc(X_r))
+    wavfile.write(f"./results/cqt_original_{fmax}.wav", fs, soundsc(X))
+    wavfile.write(f"./results/cqt_reconstruction_{fmax}.wav", fs, soundsc(X_r))
 
 
-def run_fft_dct_example():
+def run_fft_dct_example(audiofile, n_fft=64):
     random_state = np.random.RandomState(1999)
-
-    fs, d = fetch_sample_speech_fruit()
-    n_fft = 64
-    X = d[0]
+    fs, X = fetch_sample_file(audiofile)
+    # n_fft = 64
     X_stft = stft(X, n_fft)
     X_rr = complex_to_real_view(X_stft)
     X_dct = fftpack.dct(X_rr, axis=-1, norm='ortho')
@@ -3914,12 +3940,13 @@ def run_fft_dct_example():
     SNR = 20 * np.log10(np.linalg.norm(X - X_r) / np.linalg.norm(X))
     print(SNR)
 
-    wavfile.write("fftdct_orig.wav", fs, soundsc(X))
-    wavfile.write("fftdct_rec.wav", fs, soundsc(X_r))
+    wavfile.write(f"./results/fftdct_orig_{n_fft}.wav", fs, soundsc(X))
+    wavfile.write(f"./results/fftdct_rec_{n_fft}.wav", fs, soundsc(X_r))
 
 
-def run_world_example():
-    fs, d = fetch_sample_speech_tapestry()
+def run_world_example(audiofile):
+    print("Running world example without mgc")
+    fs, d = fetch_sample_file(audiofile)
     d = d.astype("float32") / 2 ** 15
     temporal_positions_h, f0_h, vuv_h, f0_candidates_h = harvest(d, fs)
     temporal_positions_ct, spectrogram_ct, fs_ct = cheaptrick(d, fs,
@@ -3928,40 +3955,44 @@ def run_world_example():
             temporal_positions_h, f0_h, vuv_h)
     #y = world_synthesis(f0_d4c, vuv_d4c, aper_d4c, spectrogram_ct, fs_ct)
     y = world_synthesis(f0_d4c, vuv_d4c, coarse_aper_d4c, spectrogram_ct, fs_ct)
-    wavfile.write("out.wav", fs, soundsc(y))
+    wavfile.write("./results/world_example_out.wav", fs, soundsc(y))
 
 
-def run_mgc_example():
-    import matplotlib.pyplot as plt
-    fs, x = wavfile.read("test16k.wav")
-    pos = 3000
-    fftlen = 1024
+def run_mgc_example(audiofile, pos=3000, fftlen=1024, mgc_order=20, mgc_alpha=0.41, mgc_gamma=-0.35):
+    print("Running Mel-generalized ceptral coefficient estimations")
+    fs, x = wavfile.read(audiofile) 
+    # pos = 3000
+    # fftlen = 1024
     win = np.blackman(fftlen) / np.sqrt(np.sum(np.blackman(fftlen) ** 2))
     xw = x[pos:pos + fftlen] * win
     sp = 20 * np.log10(np.abs(np.fft.rfft(xw)))
-    mgc_order = 20
-    mgc_alpha = 0.41
-    mgc_gamma = -0.35
+    # mgc_order = 20
+    # mgc_alpha = 0.41
+    # mgc_gamma = -0.35
     mgc_arr = win2mgc(xw, order=mgc_order, alpha=mgc_alpha, gamma=mgc_gamma, verbose=True)
     xwsp = 20 * np.log10(np.abs(np.fft.rfft(xw)))
     sp = mgc2sp(mgc_arr, mgc_alpha, mgc_gamma, fftlen)
     plt.plot(xwsp)
     plt.plot(20. / np.log(10) * np.real(sp), "r")
     plt.xlim(1, len(xwsp))
-    plt.show()
+    # plt.show()
+    plt.savefig(f"./results/run_mgc_example_pos_{pos}_fftlen_{fftlen}.png")
 
 
-def run_world_mgc_example():
+def run_world_mgc_example(mgc_alpha=0.58, mgc_order=59, mgc_gamma=0.0):
+    print("Running world synthesis using Melgeneralized ceptral coefficients example")
     fs, d = fetch_sample_speech_tapestry()
+    print(fs)
+    print(d)
     d = d.astype("float32") / 2 ** 15
 
     # harcoded for 16k from
     # https://github.com/CSTR-Edinburgh/merlin/blob/master/misc/scripts/vocoder/world/extract_features_for_merlin.sh
-    mgc_alpha = 0.58
-    #mgc_order = 59
-    mgc_order = 59
-    # this is actually just mcep
-    mgc_gamma = 0.0
+    # mgc_alpha = 0.58
+    # #mgc_order = 59
+    # mgc_order = 59
+    # # this is actually just mcep
+    # mgc_gamma = 0.0
 
     #from sklearn.externals import joblib
     #mem = joblib.Memory("/tmp")
@@ -3976,24 +4007,28 @@ def run_world_mgc_example():
 
         mgc_arr = sp2mgc(spectrogram_ct, mgc_order, mgc_alpha, mgc_gamma,
                 verbose=True)
-        return mgc_arr, spectrogram_ct, f0_d4c, vuv_d4c, coarse_aper_d4c
+        return mgc_arr, spectrogram_ct, f0_d4c, vuv_d4c, coarse_aper_d4c, aper_d4c
 
 
-    mgc_arr, spectrogram_ct, f0_d4c, vuv_d4c, coarse_aper_d4c = enc()
+    mgc_arr, spectrogram_ct, f0_d4c, vuv_d4c, coarse_aper_d4c, aper_d4c = enc()
     sp_r = mgc2sp(mgc_arr, mgc_alpha, mgc_gamma, fs=fs, verbose=True)
 
-    """
-    import matplotlib.pyplot as plt
-    plt.imshow(20 * np.log10(sp_r))
-    plt.figure()
-    plt.imshow(20 * np.log10(spectrogram_ct))
-    plt.show()
-    raise ValueError()
-    """
+    # import matplotlib.pyplot as plt
+    # plt.imshow(20 * np.log10(sp_r))
+    # plt.figure()
+    # plt.imshow(20 * np.log10(spectrogram_ct))
+    # plt.show()
+    # raise ValueError()
 
-    y = world_synthesis(f0_d4c, vuv_d4c, coarse_aper_d4c, sp_r, fs)
-    #y = world_synthesis(f0_d4c, vuv_d4c, aper_d4c, sp_r, fs)
-    wavfile.write("out_mgc.wav", fs, soundsc(y))
+    reconstructed_coarse = world_synthesis(f0_d4c, vuv_d4c, coarse_aper_d4c, sp_r, fs)
+    print(reconstructed_coarse)
+    coarse_recon_fname = "./results/coarse_out_mgc_{}.wav".format(mgc_order)
+    wavfile.write(coarse_recon_fname, fs, soundsc(reconstructed_coarse))
+    
+    # reconstructed = world_synthesis(f0_d4c, vuv_d4c, aper_d4c, sp_r, fs)
+    # print(reconstructed)
+    # recon_fname = "./results/out_mgc_{}.wav".format(mgc_order)
+    # wavfile.write(recon_fname, fs, soundsc(reconstructed))
 
 
 def get_frame(signal, winsize, no):
@@ -4014,7 +4049,7 @@ class LTSD():
         self.amplitude = {}
 
     def get_amplitude(self,signal,l):
-        if self.amplitude.has_key(l):
+        if l in self.amplitude: # self.amplitude.has_key(l):
             return self.amplitude[l]
         else:
             amp = sp.absolute(sp.fft(get_frame(signal, self.winsize,l) * self.window))
@@ -4091,9 +4126,11 @@ def ltsd_vad(x, fs, threshold=9, winsize=8192):
     return x[f_vad], f_vad
 
 
-def run_ltsd_example():
-    fs, d = fetch_sample_speech_tapestry()
-    winsize = 1024
+def run_ltsd_example(audiofile, winsize=1024):
+    # fs, d = fetch_sample_speech_tapestry()
+    print(f"Running Long Term Speech Detection Features for {winsize}")
+    fs, d = fetch_sample_file(audiofile)
+    # winsize = 1024
     d = d.astype("float32") / 2 ** 15
     d -= d.mean()
 
@@ -4102,27 +4139,50 @@ def run_ltsd_example():
     noise_pwr = max(1E-9, noise_pwr)
     d = np.concatenate((np.zeros((pad,)) + noise_pwr * np.random.randn(pad), d))
     _, vad_segments = ltsd_vad(d, fs, winsize=winsize)
+    print("Vad segments")
+    print(vad_segments)
     v_up = np.where(vad_segments == True)[0]
     s = v_up[0]
     st = v_up[-1] + int(.5 * fs)
     d = d[s:st]
 
-    bname = "tapestry.wav".split(".")[0]
-    wavfile.write("%s_out.wav" % bname, fs, soundsc(d))
+    bname = "./results/ltsd_recon_{}.wav".format(winsize)
+    wavfile.write(bname, fs, soundsc(d))
 
 
 if __name__ == "__main__":
+    audiofile = str(sys.argv[1])
     # Trying to run all examples will seg fault on my laptop - probably memory!
     # Comment individually
-    # run_ltsd_example()
+    run_phase_reconstruction_example(audiofile, fftsize=1024, step=128)
+    run_phase_reconstruction_example(audiofile, fftsize=1024, step=64)
+    run_phase_reconstruction_example(audiofile, fftsize=1024, step=32)
+    run_phase_reconstruction_example(audiofile, fftsize=1024, step=16)
+    
+    run_phase_reconstruction_example(audiofile, fftsize=512, step=128)
+    run_phase_reconstruction_example(audiofile, fftsize=512, step=64)
+    run_phase_reconstruction_example(audiofile, fftsize=512, step=32)
+    run_phase_reconstruction_example(audiofile, fftsize=512, step=16)
+    
+    run_phase_reconstruction_example(audiofile, fftsize=256, step=128)
+    run_phase_reconstruction_example(audiofile, fftsize=256, step=64)
+    run_phase_reconstruction_example(audiofile, fftsize=256, step=32)
+    run_phase_reconstruction_example(audiofile, fftsize=256, step=16)
+    # run_ltsd_example(audiofile)
+    # run_ltsd_example(audiofile, 512)
+    # run_ltsd_example(audiofile, 256)
     # run_world_mgc_example()
-    # run_world_example()
-    # run_mgc_example()
-    # run_phase_reconstruction_example()
+    # run_mgc_example(audiofile)
+    # run_mgc_example(audiofile, fftlen=512)
+    # run_mgc_example(audiofile, fftlen=256)
+    # run_lpc_example(audiofile, 16000, 200, 400, 11)
+    # run_fft_dct_example(audiofile, n_fft=32)
+    # run_fft_dct_example(audiofile, n_fft=16)
+    
+    
+    # run_cqt_example(audiofile)
+    # run_world_example(audiofile)
     # run_phase_vq_example()
     # run_dct_vq_example()
     # run_fft_vq_example()
-    run_lpc_example(16000, 200, 400, 8)
-    # run_cqt_example()
-    # run_fft_dct_example()
     # test_all()

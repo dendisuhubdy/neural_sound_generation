@@ -4,6 +4,7 @@
 data/*
 results/*
 src/features/results/*
+src/features/source/*
 
 ### C ###
 # Prerequisites
