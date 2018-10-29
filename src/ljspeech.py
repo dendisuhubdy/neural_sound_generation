@@ -2,14 +2,14 @@ from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 import numpy as np
 import os
-import audio
 import librosa
 
 from nnmnkwii import preprocessing as P
-from hparams import hparams
 from os.path import exists
+from hparams_tacotron import hparams
 
-from audio import is_mulaw_quantize, is_mulaw, is_raw
+import audio_tacotron as audio
+from audio_tacotron import is_mulaw_quantize, is_mulaw, is_raw
 
 
 def build_from_path(in_dir, out_dir, num_workers=1, tqdm=lambda x: x):
@@ -35,6 +35,8 @@ def _process_utterance(out_dir, index, wav_path, text):
         wav = wav / np.abs(wav).max() * hparams.rescaling_max
 
     # Mu-law quantize
+    # this really gets called if input_type in hparams
+    # is changed from raw to mulaw
     if is_mulaw_quantize(hparams.input_type):
         # [0, quantize_channels)
         out = P.mulaw_quantize(wav, hparams.quantize_channels)
