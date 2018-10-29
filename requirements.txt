@@ -1,4 +1,4 @@
-torch==0.4.0
+torch_nightly
 matplotlib==2.1.0
 tensorflow
 numpy==1.13.3
@@ -9,3 +9,7 @@ tensorboardX==1.1
 Unidecode==1.0.22
 pillow
 pyaudio
+nnmnkwii
+functools
+concurrent
+importlib
