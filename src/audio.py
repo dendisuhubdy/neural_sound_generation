@@ -1,3 +1,5 @@
+# coding: utf-8
+from __future__ import with_statement, print_function, absolute_import
 import librosa
 import librosa.filters
 import math
@@ -117,8 +119,12 @@ def _linear_to_mel(spectrogram):
 
 def _build_mel_basis():
     assert hparams.fmax <= hparams.sample_rate // 2
-    return librosa.filters.mel(hparams.sample_rate, hparams.fft_size,
-                               fmin=hparams.fmin, fmax=hparams.fmax,
+    # this is needed to adjust check the num mel coefficients, fft_size,
+    # sample_rate
+    return librosa.filters.mel(hparams.sample_rate,
+    			       hparams.fft_size,
+                               fmin=hparams.fmin,
+			       fmax=hparams.fmax,
                                n_mels=hparams.num_mels)
 
 
@@ -137,3 +143,26 @@ def _normalize(S):
 
 def _denormalize(S):
     return (np.clip(S, 0, 1) * -hparams.min_level_db) + hparams.min_level_db
+
+
+def _assert_valid_input_type(s):
+    assert s == "mulaw-quantize" or s == "mulaw" or s == "raw"
+
+
+def is_mulaw_quantize(s):
+    _assert_valid_input_type(s)
+    return s == "mulaw-quantize"
+
+
+def is_mulaw(s):
+    _assert_valid_input_type(s)
+    return s == "mulaw"
+
+
+def is_raw(s):
+    _assert_valid_input_type(s)
+    return s == "raw"
+
+
+def is_scalar_input(s):
+    return is_raw(s) or is_mulaw(s)

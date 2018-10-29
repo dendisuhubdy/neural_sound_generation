@@ -10,7 +10,7 @@ from torch.distributions.normal import Normal
 
 from loss import binary_cross_entropy, mse_loss
 from models import to_scalar
-from utils import unsqueeze_to_device
+from util import unsqueeze_to_device
 
 
 def train(args, model, optimizer, train_loader, device, epoch):
