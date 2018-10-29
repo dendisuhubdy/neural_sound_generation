@@ -17,7 +17,7 @@ from models import DefaultVAE, VAE, VQVAE
 from train import train, train_vae, train_vqvae
 from test import test, test_vae, test_vqvae
 from hparams import create_hparams
-from utils import unsqueeze_to_device
+from util import unsqueeze_to_device
 
 
 def parse_args():

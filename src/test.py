@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 from loss import binary_cross_entropy, mse_loss
 from models import to_scalar
-from utils import unsqueeze_to_device
+from util import unsqueeze_to_device
 
 
 def test(args, model, test_loader, device, epoch):
