@@ -3958,7 +3958,8 @@ def run_world_example(audiofile):
     wavfile.write("./results/world_example_out.wav", fs, soundsc(y))
 
 
-def run_mgc_example(audiofile, pos=3000, fftlen=1024, mgc_order=20, mgc_alpha=0.41, mgc_gamma=-0.35):
+def run_mgc_example(audiofile, pos=3000, fftlen=1024,
+                    mgc_order=20, mgc_alpha=0.41, mgc_gamma=-0.35):
     print("Running Mel-generalized ceptral coefficient estimations")
     fs, x = wavfile.read(audiofile) 
     # pos = 3000
@@ -3979,11 +3980,9 @@ def run_mgc_example(audiofile, pos=3000, fftlen=1024, mgc_order=20, mgc_alpha=0.
     plt.savefig(f"./results/run_mgc_example_pos_{pos}_fftlen_{fftlen}.png")
 
 
-def run_world_mgc_example(mgc_alpha=0.58, mgc_order=59, mgc_gamma=0.0):
+def run_world_mgc_example(audiofile, mgc_alpha=0.58, mgc_order=59, mgc_gamma=0.0):
     print("Running world synthesis using Melgeneralized ceptral coefficients example")
-    fs, d = fetch_sample_speech_tapestry()
-    print(fs)
-    print(d)
+    fs, d = fetch_sample_file(audiofile) #speech_tapestry()
     d = d.astype("float32") / 2 ** 15
 
     # harcoded for 16k from
@@ -4022,7 +4021,7 @@ def run_world_mgc_example(mgc_alpha=0.58, mgc_order=59, mgc_gamma=0.0):
 
     reconstructed_coarse = world_synthesis(f0_d4c, vuv_d4c, coarse_aper_d4c, sp_r, fs)
     print(reconstructed_coarse)
-    coarse_recon_fname = "./results/coarse_out_mgc_{}.wav".format(mgc_order)
+    coarse_recon_fname = "./results/melgeneralized_{}.wav".format(mgc_order)
     wavfile.write(coarse_recon_fname, fs, soundsc(reconstructed_coarse))
     
     # reconstructed = world_synthesis(f0_d4c, vuv_d4c, aper_d4c, sp_r, fs)
@@ -4154,11 +4153,21 @@ if __name__ == "__main__":
     audiofile = str(sys.argv[1])
     # Trying to run all examples will seg fault on my laptop - probably memory!
     # Comment individually
+    run_phase_reconstruction_example(audiofile, fftsize=2048, step=512)
+    run_phase_reconstruction_example(audiofile, fftsize=2048, step=256)
+    run_phase_reconstruction_example(audiofile, fftsize=2048, step=128)
+    run_phase_reconstruction_example(audiofile, fftsize=2048, step=64)
+    run_phase_reconstruction_example(audiofile, fftsize=2048, step=32)
+    run_phase_reconstruction_example(audiofile, fftsize=2048, step=16)
+    
+    run_phase_reconstruction_example(audiofile, fftsize=1024, step=300)
+    run_phase_reconstruction_example(audiofile, fftsize=1024, step=256)
     run_phase_reconstruction_example(audiofile, fftsize=1024, step=128)
     run_phase_reconstruction_example(audiofile, fftsize=1024, step=64)
     run_phase_reconstruction_example(audiofile, fftsize=1024, step=32)
     run_phase_reconstruction_example(audiofile, fftsize=1024, step=16)
     
+    run_phase_reconstruction_example(audiofile, fftsize=512, step=256)
     run_phase_reconstruction_example(audiofile, fftsize=512, step=128)
     run_phase_reconstruction_example(audiofile, fftsize=512, step=64)
     run_phase_reconstruction_example(audiofile, fftsize=512, step=32)
@@ -4168,10 +4177,13 @@ if __name__ == "__main__":
     run_phase_reconstruction_example(audiofile, fftsize=256, step=64)
     run_phase_reconstruction_example(audiofile, fftsize=256, step=32)
     run_phase_reconstruction_example(audiofile, fftsize=256, step=16)
-    # run_ltsd_example(audiofile)
-    # run_ltsd_example(audiofile, 512)
-    # run_ltsd_example(audiofile, 256)
-    # run_world_mgc_example()
+    
+    run_ltsd_example(audiofile)
+    run_ltsd_example(audiofile, 512)
+    run_ltsd_example(audiofile, 256)
+    
+    # for order in list(range(1, 40)):
+        # run_world_mgc_example(audiofile=audiofile, mgc_order=order)
     # run_mgc_example(audiofile)
     # run_mgc_example(audiofile, fftlen=512)
     # run_mgc_example(audiofile, fftlen=256)
