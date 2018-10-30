@@ -1,4 +1,3 @@
-
 import numpy as np
 import tensorflow as tf
 
@@ -6,7 +5,9 @@ import tensorflow as tf
 hparams = tf.contrib.training.HParams(
     # Comma-separated list of cleaners to run on text prior to training and eval. For non-English
     # text, you may want to use "basic_cleaners" or "transliteration_cleaners".
+    name='vocoder',
     cleaners='english_cleaners',
+    builder="wavenet",
 
 
     #If you only have 1 GPU or want to use only one GPU, please set num_gpus=0 and specify the GPU idx on run. example:
@@ -61,7 +62,7 @@ hparams = tf.contrib.training.HParams(
     #		.ipynb provided in the repo to listen to some inverted mel/linear spectrograms. That will first give you some idea about your above parameters, and
     #		it will also give you an idea about trimming. If silences persist, try reducing trim_top_db slowly. If samples are trimmed mid words, try increasing it.
     #	6- If audio quality is too metallic or fragmented (or if linear spectrogram plots are showing black silent regions on top), then restart from step 2.
-    num_mels = 80, #Number of mel-spectrogram channels and local conditioning dimensionality
+    num_mels = 40, #Number of mel-spectrogram channels and local conditioning dimensionality
     num_freq = 1025, # (= n_fft / 2 + 1) only used when adding linear spectrograms post processing network
     rescaling = True, #Whether to rescale audio prior to preprocessing
     rescaling_max = 0.999, #Rescaling value
@@ -93,7 +94,8 @@ hparams = tf.contrib.training.HParams(
     #Mel and Linear spectrograms normalization/scaling and clipping
     signal_normalization = True, #Whether to normalize mel spectrograms to some predefined range (following below parameters)
     allow_clipping_in_normalization = True, #Only relevant if mel_normalization = True
-    symmetric_mels = True, #Whether to scale the data to be symmetric around 0. (Also multiplies the output range by 2, faster and cleaner convergence)
+    symmetric_mels = False, #Whether to scale the data to be symmetric around 0. (Also multiplies the output range by 2, faster and cleaner convergence)
+    # symmetric_mels = True, #Whether to scale the data to be symmetric around 0. (Also multiplies the output range by 2, faster and cleaner convergence)
     max_abs_value = 1., #max absolute value of data. If symmetric, data will be [-max, max] else [0, max] (Must not be too big to avoid gradient explosion, 
 																									      #not too small for fast convergence)
     normalize_for_wavenet = True, #whether to rescale to [0, 1] for wavenet. (better audio quality)
@@ -301,6 +303,62 @@ hparams = tf.contrib.training.HParams(
 
     #Tacotron-2 integration parameters
     train_with_GTA = False, #Whether to use GTA mels to train WaveNet instead of ground truth mels.
+    # This should equal to `quantize_channels` if mu-law quantize enabled
+    # otherwise num_mixture * 3 (pi, mean, log_scale)
+    # out_channels=10 * 3,
+    # residual_channels=512,
+    # gate_channels=512,  # split into 2 gropus internally for gated activation
+    # skip_out_channels=256,
+    dropout=1 - 0.95,
+    # kernel_size=3,
+    # If True, apply weight normalization as same as DeepVoice3
+    weight_normalization=True,
+    # Use legacy code or not. Default is True since we already provided a model
+    # based on the legacy code that can generate high-quality audio.
+    # Ref: https://github.com/r9y9/wavenet_vocoder/pull/73
+    legacy=True,
+
+    # Global conditioning (set negative value to disable)
+    # currently limited for speaker embedding
+    # this should only be enabled for multi-speaker dataset
+
+    # Data loader
+    pin_memory=True,
+    num_workers=2,
+
+    # train/test
+    # test size can be specified as portion or num samples
+    test_size=0.0441,  # 50 for CMU ARCTIC single speaker
+    test_num_samples=None,
+    random_state=1234,
+
+    # Loss
+
+    # Training:
+    batch_size=2,
+    adam_beta1=0.9,
+    adam_beta2=0.999,
+    adam_eps=1e-8,
+    amsgrad=False,
+    initial_learning_rate=1e-3,
+    # see lrschedule.py for available lr_schedule
+    lr_schedule="noam_learning_rate_decay",
+    lr_schedule_kwargs={},  # {"anneal_rate": 0.5, "anneal_interval": 50000},
+    nepochs=2000,
+    weight_decay=0.0,
+    clip_thresh=-1,
+    # Hold moving averaged parameters and use them for evaluation
+    exponential_moving_average=True,
+    # averaged = decay * averaged + (1 - decay) * x
+    ema_decay=0.9999,
+
+    # Save
+    # per-step intervals
+    checkpoint_interval=10000,
+    train_eval_interval=10000,
+    # per-epoch interval
+    test_eval_epoch_interval=5,
+    save_optimizer_state=True,
     ###########################################################################################################################################
 
     #Eval sentences (if no eval text file was specified during synthesis, these sentences are used for eval)

@@ -59,23 +59,25 @@ def get_hop_size():
         print("Predefined hop_size is ", hop_size)
     return hop_size
 
-def linearspectrogram(wav):
-    D = _stft(preemphasis(wav, hparams.preemphasis, hparams.preemphasize))
+def linearspectrogram(wav, fft_size, hop_size):
+    D = _stft(preemphasis(wav, hparams.preemphasis, hparams.preemphasize),
+              fft_size, hop_size)
     S = _amp_to_db(np.abs(D)) - hparams.ref_level_db
     if hparams.signal_normalization:
         return _normalize(S)
     return S
 
-def melspectrogram(wav):
-    D = _stft(preemphasis(wav, hparams.preemphasis, hparams.preemphasize))
-    S = _amp_to_db(_linear_to_mel(np.abs(D))) - hparams.ref_level_db
+def melspectrogram(wav, sample_rate, fft_size, hop_size, n_mels):
+    D = _stft(preemphasis(wav, hparams.preemphasis, hparams.preemphasize),
+              fft_size, hop_size)
+    S = _amp_to_db(_linear_to_mel(np.abs(D), sample_rate, fft_size, n_mels)) - hparams.ref_level_db
     if not hparams.allow_clipping_in_normalization:
         assert S.max() <= 0 and S.min() - hparams.min_level_db >= 0
     if hparams.signal_normalization:
         return _normalize(S)
     return S
 
-def inv_linear_spectrogram(linear_spectrogram):
+def inv_linear_spectrogram(linear_spectrogram, fft_size, hop_size):
     '''Converts linear spectrogram to waveform using librosa'''
     if hparams.signal_normalization:
         D = _denormalize(linear_spectrogram)
@@ -85,33 +87,36 @@ def inv_linear_spectrogram(linear_spectrogram):
     S = _db_to_amp(D + hparams.ref_level_db) #Convert back to linear
 
     if hparams.use_lws:
-        processor = _lws_processor()
+        processor = _lws_processor(fft_size, hop_size)
         D = processor.run_lws(S.astype(np.float64).T ** hparams.power)
         y = processor.istft(D).astype(np.float32)
         return inv_preemphasis(y, hparams.preemphasis, hparams.preemphasize)
     else:
-        return inv_preemphasis(_griffin_lim(S ** hparams.power), hparams.preemphasis, hparams.preemphasize)
+        return inv_preemphasis(_griffin_lim(S ** hparams.power, fft_size, hop_size),
+                               hparams.preemphasis, hparams.preemphasize)
 
 
-def inv_mel_spectrogram(mel_spectrogram):
+def inv_mel_spectrogram(mel_spectrogram, sample_rate, fft_size, hop_size, n_mel):
     '''Converts mel spectrogram to waveform using librosa'''
     if hparams.signal_normalization:
         D = _denormalize(mel_spectrogram)
     else:
         D = mel_spectrogram
 
-    S = _mel_to_linear(_db_to_amp(D + hparams.ref_level_db))  # Convert back to linear
+    S = _mel_to_linear(_db_to_amp(D + hparams.ref_level_db),
+                       sample_rate, fft_size, n_mel)  # Convert back to linear
 
     if hparams.use_lws:
-        processor = _lws_processor()
+        processor = _lws_processor(fft_size, hop_size)
         D = processor.run_lws(S.astype(np.float64).T ** hparams.power)
         y = processor.istft(D).astype(np.float32)
         return inv_preemphasis(y, hparams.preemphasis, hparams.preemphasize)
     else:
-        return inv_preemphasis(_griffin_lim(S ** hparams.power), hparams.preemphasis, hparams.preemphasize)
+        return inv_preemphasis(_griffin_lim(S ** hparams.power, fft_size, hop_size),
+                               hparams.preemphasis, hparams.preemphasize)
 
-def _lws_processor():
-    return lws.lws(hparams.fft_size, get_hop_size(), mode="speech")
+def _lws_processor(fft_size, hop_size):
+    return lws.lws(fft_size, hop_size, mode="speech")
 
 
 def lws_num_frames(length, fsize, fshift):
@@ -134,26 +139,26 @@ def lws_pad_lr(x, fsize, fshift):
     r = (M - 1) * fshift + fsize - T
     return pad, pad + r
 
-def _griffin_lim(S):
+def _griffin_lim(S, fft_size, hop_size):
     '''librosa implementation of Griffin-Lim
     Based on https://github.com/librosa/librosa/issues/434
     '''
     angles = np.exp(2j * np.pi * np.random.rand(*S.shape))
     S_complex = np.abs(S).astype(np.complex)
-    y = _istft(S_complex * angles)
+    y = _istft(S_complex * angles, hop_size)
     for i in range(hparams.griffin_lim_iters):
-            angles = np.exp(1j * np.angle(_stft(y)))
-            y = _istft(S_complex * angles)
+        angles = np.exp(1j * np.angle(_stft(y, fft_size, hop_size)))
+        y = _istft(S_complex * angles, hop_size)
     return y
 
-def _stft(y):
+def _stft(y, fft_size, hop_size):
     if hparams.use_lws:
-        return _lws_processor().stft(y).T
+        return _lws_processor(fft_size, hop_size).stft(y).T
     else:
-        return librosa.stft(y=y, n_fft=hparams.fft_size, hop_length=get_hop_size())
+        return librosa.stft(y=y, n_fft=fft_size, hop_length=hop_size)
 
-def _istft(y):
-    return librosa.istft(y, hop_length=get_hop_size())
+def _istft(y, hop_size):
+    return librosa.istft(y, hop_length=hop_size)
 
 ##########################################################
 #Those are only correct when using lws!!! (This was messing with Wavenet quality for a long time!)
@@ -185,25 +190,33 @@ def librosa_pad_lr(x, fsize, fshift):
 
 
 # Conversions
-_mel_basis = None
-_inv_mel_basis = None
+# _mel_basis = None
+# _inv_mel_basis = None
 
-def _linear_to_mel(spectogram):
-    global _mel_basis
+def _linear_to_mel(spectogram, sample_rate, fft_size, n_mels, _mel_basis = None):
+    # global _mel_basis
     if _mel_basis is None:
-        _mel_basis = _build_mel_basis()
+        _mel_basis = _build_mel_basis(sample_rate, fft_size, n_mels)
     return np.dot(_mel_basis, spectogram)
 
-def _mel_to_linear(mel_spectrogram):
-    global _inv_mel_basis
+def _mel_to_linear(mel_spectrogram, sample_rate, fft_size, n_mels, _inv_mel_basis=None):
+    # global _inv_mel_basis
     if _inv_mel_basis is None:
-        _inv_mel_basis = np.linalg.pinv(_build_mel_basis())
+        _inv_mel_basis = np.linalg.pinv(_build_mel_basis(sample_rate, fft_size, n_mels))
     return np.maximum(1e-10, np.dot(_inv_mel_basis, mel_spectrogram))
 
-def _build_mel_basis():
+def _build_mel_basis(sample_rate, fft_size, n_mels):
     assert hparams.fmax <= hparams.sample_rate // 2
-    return librosa.filters.mel(hparams.sample_rate, hparams.fft_size, n_mels=hparams.num_mels,
-                                                       fmin=hparams.fmin, fmax=hparams.fmax)
+    # return librosa.filters.mel(hparams.sample_rate,
+                               # hparams.fft_size,
+                               # n_mels=hparams.num_mels,
+                               # fmin=hparams.fmin,
+                               # fmax=hparams.fmax)
+    return librosa.filters.mel(sample_rate,
+                               fft_size,
+                               n_mels=n_mels,
+                               fmin=hparams.fmin,
+                               fmax=hparams.fmax)
 
 def _amp_to_db(x):
     min_level = np.exp(hparams.min_level_db / 20 * np.log(10))
@@ -267,7 +280,32 @@ if __name__ == "__main__":
     import sys
     import os
     out_dir = str(sys.argv[1])
+    recon_sample_rate = int(sys.argv[2]) 
+    recon_fft_size = int(sys.argv[3])
+    recon_hop_size = int(sys.argv[4])
+    recon_n_mels = int(sys.argv[5])
+    
+    # audio load
+    # src_wav_filename = "ljspeech-audio-00001.npy"
+    # orig_wav = np.load(os.path.join(out_dir, src_wav_filename))
+    # save_wav(orig_wav, "./orig-ljspeech-audio-00001.wav")
+    
+    # compute the melspectrogram
+    # assign filename
     mel_filename = "ljspeech-mel-00001.npy"
-    dst_wav_path = "./ljspeech-mel-00001.wav"
+    # load the numpy dumped file
     melspectrogram = np.load(os.path.join(out_dir, mel_filename))
-    print(np.array(melspectrogram))
+    melspectrogram = melspectrogram.T
+    # print it's values
+    assert np.array(melspectrogram).shape[0] == recon_n_mels
+
+    signal = inv_mel_spectrogram(melspectrogram,
+                                 recon_sample_rate,
+                                 recon_fft_size,
+                                 recon_hop_size,
+                                 recon_n_mels)
+
+    save_wav(signal, "./recon-ljspeech-audio-00001-{}-{}-{}-{}.wav".format(recon_sample_rate,
+                                                               recon_fft_size,
+                                                               recon_hop_size,
+                                                               recon_n_mels))
