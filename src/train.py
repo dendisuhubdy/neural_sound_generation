@@ -41,11 +41,15 @@ def train_vae(args, model, optimizer, train_loader, device, epoch):
     model.train()
     train_loss = 0
     if args.dataset == 'ljspeech':
-        for batch_idx, batch in enumerate(train_loader):
-            text_padded, input_lengths, mel_padded, \
-                    gate_padded, output_lengths = batch
+        # for batch_idx, batch in enumerate(train_loader):
+        for step, (x, y, c, g, input_lengths) in tqdm(enumerate(train_loader)):
+            train = (phase == "train")
+            # text_padded, input_lengths, mel_padded, \
+                    # gate_padded, output_lengths = batch
             # here we input mel padded into the model
-            data = unsqueeze_to_device(mel_padded, device).float()
+            # data = unsqueeze_to_device(mel_padded, device).float()
+            
+            
             # max_len = int(torch.max(input_lengths.data).numpy())
             # print("============ Input data size =========")
             # print(data.size())
@@ -98,11 +102,13 @@ def train_vqvae(args, model, optimizer, train_loader, device, epoch):
     model.train()
     train_loss = 0
     if args.dataset == 'ljspeech':
-        for batch_idx, batch in enumerate(train_loader):
-            text_padded, input_lengths, mel_padded, \
-                    gate_padded, output_lengths = batch
+        for step, (x, y, c, g, input_lengths) in tqdm(enumerate(train_loader)):
+        # for batch_idx, batch in enumerate(train_loader):
+            # text_padded, input_lengths, mel_padded, \
+                    # gate_padded, output_lengths = batch
             # here we input mel padded into the model
-            data = unsqueeze_to_device(mel_padded, device).float()
+            data = x
+            # data = unsqueeze_to_device(mel_padded, device).float()
             # print("============ Input data size =========")
             # print(data.size())
             optimizer.zero_grad()

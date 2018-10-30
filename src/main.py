@@ -12,13 +12,12 @@ from torchvision import datasets, transforms
 from torchvision.utils import save_image, make_grid
 
 from dataloader import (load_training_data, load_test_data,
-                       prepare_dataloaders)
+                       prepare_dataloaders, get_audio_data_loaders)
 from models import DefaultVAE, VAE, VQVAE
 from train import train, train_vae, train_vqvae
 from test import test, test_vae, test_vqvae
 from hparams import create_hparams
 from util import unsqueeze_to_device
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description='VAE MNIST Example')
@@ -76,7 +75,9 @@ def main():
     device = torch.device("cuda" if args.cuda else "cpu")
 
     if args.dataset == 'ljspeech':
-        train_loader, test_loader, collate_fn = prepare_dataloaders(hparams)
+        # Dataloader setup
+        data_loaders = get_audio_data_loaders(data_root, speaker_id, test_shuffle=True)
+        # train_loader, test_loader, collate_fn = prepare_dataloaders(hparams)
         # train_loader, test_loader = prepare_dataloaders(hparams)
 
     else:
