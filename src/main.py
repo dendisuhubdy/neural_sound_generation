@@ -14,12 +14,10 @@ from torchvision import datasets, transforms
 from torchvision.utils import save_image, make_grid
 
 from dataloader import (load_training_data, load_test_data,
-                       prepare_dataloaders, get_audio_data_loaders)
+                        get_audio_data_loaders)
 from models import DefaultVAE, VAE, VQVAE
 from train import train, train_vae, train_vqvae
 from test import test, test_vae, test_vqvae
-from hparams import create_hparams
-from util import unsqueeze_to_device
 
 
 def parse_args():
@@ -34,10 +32,8 @@ def parse_args():
                         default='./data/', metavar='N',
                         help='dataset directory for training')
     parser.add_argument('--sampledir', type=str,
-                        default='/data/milatmp1/suhubdyd/vae_samples/', metavar='N',
+                        default='./vae_samples/', metavar='N',
                         help='sample directories')
-    # remember to execute
-    # `sed -i -- 's,DUMMY,ljs_dataset_folder/wavs,g' filelists/*.txt`
     parser.add_argument('--epochs', type=int, default=100, metavar='N',
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
@@ -55,8 +51,8 @@ def parse_args():
                         help='hidden layer width')
     parser.add_argument('--z-dim', type=int, default=128, metavar='S',
                         help='hidden layer size')
-    parser.add_argument('--hparams', type=str,
-                        required=False, help='comma separated name=value pairs')
+    # parser.add_argument('--hparams', type=str,
+                        # required=False, help='comma separated name=value pairs')
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     return args
@@ -70,18 +66,20 @@ def save_checkpoint(args, state):
 def main():
     args = parse_args()
     torch.manual_seed(args.seed)
-    hparams = create_hparams(args.hparams)
-
-    torch.backends.cudnn.enabled = hparams.cudnn_enabled
-    torch.backends.cudnn.benchmark = hparams.cudnn_benchmark
+    # hparams = create_hparams(args.hparams)
+    # torch.backends.cudnn.enabled = hparams.cudnn_enabled
+    # torch.backends.cudnn.benchmark = hparams.cudnn_benchmark
 
     device = torch.device("cuda" if args.cuda else "cpu")
 
     if args.dataset == 'ljspeech':
         # Dataloader setup
-        data_loaders = get_audio_data_loaders(data_root, speaker_id, test_shuffle=True)
-        # train_loader, test_loader, collate_fn = prepare_dataloaders(hparams)
-        # train_loader, test_loader = prepare_dataloaders(hparams)
+        speaker_id = None
+        data_root = os.path.join(args.datadir, 'ljs_1024_256_80')
+        audio_data_loaders = get_audio_data_loaders(data_root, speaker_id, test_shuffle=True)
+        train_loader = audio_data_loaders["train"]
+        test_loader = audio_data_loaders["test"]
+        print("LJSpeech data loaded")
 
     else:
         kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
@@ -118,44 +116,70 @@ def main():
 
     # setup optimizer as Adam
     optimizer = optim.Adam(model.parameters(), lr=args.lr_rate)
-
-    for epoch in range(1, args.epochs + 1):
-        if args.model == 'vae':
-            train_vae(args, model, optimizer, train_loader, device, epoch)
-            test_vae(args, model, test_loader, device, epoch)
-        elif args.model == 'vqvae':
-            train_vqvae(args, model, optimizer, train_loader, device, epoch)
-            test_vqvae(args, model, test_loader, device, epoch)
-
-        with torch.no_grad():
-            # sample = torch.randn(64, 1, 28, 28).to(device)
-            sample, _ = next(iter(test_loader))
-            sample = sample.to(device)
-            # text_padded, input_lengths, mel_padded, \
-                    # gate_padded, output_lengths  = next(iter(test_loader))
-            # # here we input mel padded into the model
-            # sample = unsqueeze_to_device(mel_padded, device).float()
-            print("Evaluating samples")
+    
+    last_epoch = 0
+    try:
+        # Train!
+        for epoch in range(1, args.epochs + 1):
             if args.model == 'vae':
-                reconstruction, _ = model(sample)
+                train_vae(args, model, optimizer, train_loader, device, epoch)
+                test_vae(args, model, test_loader, device, epoch)
             elif args.model == 'vqvae':
-                reconstruction, _, _ = model(sample)
-            grid_samples = make_grid(sample.cpu(), nrow=8, range=(-1, 1), normalize=True)
-            save_image(grid_samples, os.path.join(args.sampledir, format(args.dataset),\
-                        'samples_' + str(args.model)\
-                        + '_data_' + str(args.dataset)\
-                        + '_dim_' + str(args.dim)\
-                        + '_z_dim_' + str(args.z_dim)\
-                        + '_epoch_' + str(epoch) + '.png'))
-            grid_reconstruction = make_grid(reconstruction.cpu(), nrow=8, range=(-1, 1), normalize=True)
-            save_image(grid_reconstruction, os.path.join(args.sampledir, format(args.dataset),\
-                        'reconstruction_' + str(args.model)\
-                        + '_data_' + str(args.dataset)\
-                        + '_dim_' + str(args.dim)\
-                        + '_z_dim_' + str(args.z_dim)\
-                        + '_epoch_' + str(epoch) + '.png'))
+                train_vqvae(args, model, optimizer, train_loader, device, epoch)
+                test_vqvae(args, model, test_loader, device, epoch)
+
+            with torch.no_grad():
+                # sample = torch.randn(64, 1, 28, 28).to(device)
+                sample, _ = next(iter(test_loader))
+                sample = sample.to(device)
+                sample = sample.unsqueeze(1)
+                # text_padded, input_lengths, mel_padded, \
+                        # gate_padded, output_lengths  = next(iter(test_loader))
+                # # here we input mel padded into the model
+                # sample = unsqueeze_to_device(mel_padded, device).float()
+                print("Evaluating samples")
+                if args.model == 'vae':
+                    reconstruction, _ = model(sample)
+                elif args.model == 'vqvae':
+                    reconstruction, _, _ = model(sample)
+                np.save(os.path.join(args.sampledir, format(args.dataset),\
+                            'reconstruction_' + str(args.model)\
+                            + '_data_' + str(args.dataset)\
+                            + '_dim_' + str(args.dim)\
+                            + '_z_dim_' + str(args.z_dim)\
+                            + '_epoch_' + str(epoch) + '.npy'),
+                        reconstruction.cpu(),
+                        allow_pickle=True)
+                # grid_samples = make_grid(sample.cpu(), nrow=8, range=(-1, 1), normalize=True)
+                # save_image(grid_samples,
+                            # os.path.join(args.sampledir, format(args.dataset),\
+                            # 'samples_' + str(args.model)\
+                            # + '_data_' + str(args.dataset)\
+                            # + '_dim_' + str(args.dim)\
+                            # + '_z_dim_' + str(args.z_dim)\
+                            # + '_epoch_' + str(epoch) + '.png'))
+                # grid_reconstruction = make_grid(reconstruction.cpu(), nrow=8, range=(-1, 1), normalize=True)
+                # save_image(grid_reconstruction, 
+                            # os.path.join(args.sampledir, format(args.dataset),\
+                            # 'reconstruction_' + str(args.model)\
+                            # + '_data_' + str(args.dataset)\
+                            # + '_dim_' + str(args.dim)\
+                            # + '_z_dim_' + str(args.z_dim)\
+                            # + '_epoch_' + str(epoch) + '.png'))
+                last_epoch = epoch
+
+                save_checkpoint(args, {
+                    'epoch': last_epoch,
+                    'arch': args.model,
+                    'state_dict': model.state_dict(),
+                    'optimizer' : optimizer.state_dict()})
+        
+    except KeyboardInterrupt:
+        print("Interrupted!")
+        pass
+    finally:
         save_checkpoint(args, {
-            'epoch': epoch + 1,
+            'epoch': last_epoch,
             'arch': args.model,
             'state_dict': model.state_dict(),
             'optimizer' : optimizer.state_dict()})

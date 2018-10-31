@@ -23,8 +23,6 @@ import numpy as np
 import math
 import os
 import sys
-
-
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -37,6 +35,8 @@ from librosa.filters import mel as librosa_mel_fn
 from nnmnkwii import preprocessing as P
 from nnmnkwii.datasets import FileSourceDataset, FileDataSource
 
+import audio_tacotron as audio
+from audio_tacotron import is_mulaw_quantize, is_mulaw, is_raw
 from features import dynamic_range_compression
 from features import window_sumsquare, dynamic_range_compression
 from hparams_tacotron import hparams
