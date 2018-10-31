@@ -1,12 +1,12 @@
+import numpy as np
+import lws
 import librosa
 import librosa.filters
-import numpy as np
+
 from scipy import signal
 from scipy.io import wavfile
 
 from hparams_tacotron import hparams
-
-import lws
 
 
 def load_wav(path):

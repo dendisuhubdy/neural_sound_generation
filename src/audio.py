@@ -1,15 +1,16 @@
 # coding: utf-8
 from __future__ import with_statement, print_function, absolute_import
 
+import lws
 import librosa
 import librosa.filters
 import math
 import numpy as np
+
 from scipy import signal
-from hparams import hparams
 from scipy.io import wavfile
 
-import lws
+from hparams import hparams
 
 
 def load_wav(path):

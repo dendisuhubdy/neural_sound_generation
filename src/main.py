@@ -6,6 +6,8 @@ All rights reserved
 """
 import argparse
 import os
+import sys
+
 import torch
 from torch import nn, optim
 from torchvision import datasets, transforms
@@ -18,6 +20,7 @@ from train import train, train_vae, train_vqvae
 from test import test, test_vae, test_vqvae
 from hparams import create_hparams
 from util import unsqueeze_to_device
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='VAE MNIST Example')
@@ -156,6 +159,7 @@ def main():
             'arch': args.model,
             'state_dict': model.state_dict(),
             'optimizer' : optimizer.state_dict()})
+
 
 if __name__ == "__main__":
     main()

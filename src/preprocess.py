@@ -14,11 +14,12 @@ options:
     --n_mels=<n>             Number of Melspectrogram
     -h, --help               Show help message.
 """
-from docopt import docopt
 import os
+import importlib
+
+from docopt import docopt
 from multiprocessing import cpu_count
 from tqdm import tqdm
-import importlib
 from hparams_tacotron import hparams
 
 

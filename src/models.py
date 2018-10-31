@@ -12,7 +12,7 @@ from torch.distributions.normal import Normal
 from torch.distributions import kl_divergence
 from torch.autograd import Function
 
-from functions import vq, vq_st
+from vector_quantization import vq, vq_st
 
 
 def to_scalar(arr):
