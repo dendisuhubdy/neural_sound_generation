@@ -19,7 +19,7 @@ from dataloader import (load_training_data, load_test_data,
 from models import DefaultVAE, VAE, VQVAE
 from train import train, train_vae, train_vqvae
 from test import test, test_vae, test_vqvae
-from audio_tacotron import inv_mel_spectrogram
+from audio_tacotron import inv_mel_spectrogram, save_wav
 
 
 def parse_args():
@@ -34,7 +34,7 @@ def parse_args():
                         default='./data/', metavar='N',
                         help='dataset directory for training')
     parser.add_argument('--sampledir', type=str,
-                        default='./vae_samples/', metavar='N',
+                        default='./results/', metavar='N',
                         help='sample directories')
     parser.add_argument('--epochs', type=int, default=100, metavar='N',
                         help='number of epochs to train (default: 10)')
@@ -49,9 +49,9 @@ def parse_args():
     parser.add_argument('--beta', type=float, default=1.0,
                         help='contribution of commitment loss,\
                               between 0.1 and 2.0 (default: 1.0)')
-    parser.add_argument('--dim', type=int, default=256, metavar='S',
+    parser.add_argument('--dim', type=int, default=1, metavar='S',
                         help='hidden layer width')
-    parser.add_argument('--z-dim', type=int, default=128, metavar='S',
+    parser.add_argument('--z-dim', type=int, default=1, metavar='S',
                         help='hidden layer size')
     # parser.add_argument('--hparams', type=str,
                         # required=False, help='comma separated name=value pairs')
@@ -61,7 +61,10 @@ def parse_args():
 
 
 def save_checkpoint(args, state):
-    filename = './models/{}/checkpoint_{}.pth.tar'.format(args.model, args.dataset)
+    filename = './models/{}/checkpoint_{}_{}_{}.pth.tar'.format(args.model,
+                                                             args.dataset,
+                                                             args.dim,
+                                                             args.z_dim)
     torch.save(state, filename)
 
 
@@ -155,19 +158,28 @@ def main():
                             + '_epoch_' + str(epoch) + '.npy'),
                             reconstruction,
                             allow_pickle=True)
+                
+                mel_concat = None
+
                 for idx, mel in enumerate(reconstruction):
-                    signal = inv_mel_spectrogram(mel,
-                                                 22050,
-                                                 1024,
-                                                 256,
-                                                 80)
-                    save_wav(signal, os.path.join(args.sampledir,format(args.dataset),\
-                                'reconstruction_' + str(args.model)\
-                                + '_data_' + str(args.dataset)\
-                                + '_dim_' + str(args.dim)\
-                                + '_z_dim_' + str(args.z_dim)\
-                                + '_epoch_' + str(epoch)\
-                                + '_' + str(idx) + '.wav'))
+                    print(mel.shape)
+                    mel_concat = np.hstack(mel_concat, mel)
+                    print(mel_concat.shape)
+
+                assert mel_concat.shape[1] = 80
+                    
+                signal = inv_mel_spectrogram(mel,
+                                             22050,
+                                             1024,
+                                             256,
+                                             80)
+                save_wav(signal, os.path.join(args.sampledir,format(args.dataset),\
+                            'reconstruction_' + str(args.model)\
+                            + '_data_' + str(args.dataset)\
+                            + '_dim_' + str(args.dim)\
+                            + '_z_dim_' + str(args.z_dim)\
+                            + '_epoch_' + str(epoch)\
+                            + '_' + str(idx) + '.wav'))
                 # grid_samples = make_grid(sample.cpu(), nrow=8, range=(-1, 1), normalize=True)
                 # save_image(grid_samples,
                             # os.path.join(args.sampledir, format(args.dataset),\
