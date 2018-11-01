@@ -105,7 +105,7 @@ def train_vqvae(args, model, optimizer, train_loader, device, epoch):
     model.train()
     train_loss = 0
     if args.dataset == 'ljspeech':
-        for step, (x, y, c, g, input_lengths) in tqdm(enumerate(train_loader)):
+        for batch_idx, (x, y, c, g, input_lengths) in tqdm(enumerate(train_loader)):
             optimizer.zero_grad()
             # Prepare data
             x, y = x.to(device), y.to(device)
@@ -139,7 +139,7 @@ def train_vqvae(args, model, optimizer, train_loader, device, epoch):
 
             if batch_idx % args.log_interval == 0:
                 print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                    epoch, batch_idx * len(data), len(train_loader.dataset),
+                    epoch, batch_idx * len(c), len(train_loader.dataset),
                     args.log_interval * batch_idx / len(train_loader),
                     train_loss
                     ))

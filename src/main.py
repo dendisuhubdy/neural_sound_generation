@@ -155,17 +155,19 @@ def main():
                             + '_epoch_' + str(epoch) + '.npy'),
                             reconstruction,
                             allow_pickle=True)
-                signal = inv_mel_spectrogram(reconstruction,
-                                             22050,
-                                             1024,
-                                             256,
-                                             80)
-                save_wav(signal, os.path.join(args.sampledir,format(args.dataset),\
-                            'reconstruction_' + str(args.model)\
-                            + '_data_' + str(args.dataset)\
-                            + '_dim_' + str(args.dim)\
-                            + '_z_dim_' + str(args.z_dim)\
-                            + '_epoch_' + str(epoch) + '.wav'))
+                for idx, mel in enumerate(reconstruction):
+                    signal = inv_mel_spectrogram(mel,
+                                                 22050,
+                                                 1024,
+                                                 256,
+                                                 80)
+                    save_wav(signal, os.path.join(args.sampledir,format(args.dataset),\
+                                'reconstruction_' + str(args.model)\
+                                + '_data_' + str(args.dataset)\
+                                + '_dim_' + str(args.dim)\
+                                + '_z_dim_' + str(args.z_dim)\
+                                + '_epoch_' + str(epoch)\
+                                + '_' + str(idx) + '.wav'))
                 # grid_samples = make_grid(sample.cpu(), nrow=8, range=(-1, 1), normalize=True)
                 # save_image(grid_samples,
                             # os.path.join(args.sampledir, format(args.dataset),\
