@@ -159,22 +159,31 @@ def main():
                             reconstruction,
                             allow_pickle=True)
                 
+                print("Trying audio reconstruction on test set..")
+
                 mel_concat = None
 
                 for idx, mel in enumerate(reconstruction):
-                    print(mel.shape)
-                    mel_concat = np.hstack(mel_concat, mel)
-                    print(mel_concat.shape)
+                    if idx == 0:
+                        mel_concat = mel
+                    else:
+                        mel_concat = np.concatenate((mel_concat, mel), axis=1)
+                
+                sampling_rate = 22050
+                fft_size = 1024
+                hop_size = 256 # overlap window
+                n_mels = 80 # number of melcepstrum coefficients (log scale)
 
-                assert mel_concat.shape[1] = 80
+                assert mel_concat.shape[1] == n_mels
                     
                 signal = inv_mel_spectrogram(mel,
-                                             22050,
-                                             1024,
-                                             256,
-                                             80)
+                                             sampling_rate,
+                                             fft_size,
+                                             hop_size,
+                                             n_mels)
+
                 save_wav(signal, os.path.join(args.sampledir,format(args.dataset),\
-                            'reconstruction_' + str(args.model)\
+                            'audio_recon_' + str(args.model)\
                             + '_data_' + str(args.dataset)\
                             + '_dim_' + str(args.dim)\
                             + '_z_dim_' + str(args.z_dim)\
