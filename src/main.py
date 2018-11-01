@@ -130,18 +130,18 @@ def main():
 
             with torch.no_grad():
                 # sample = torch.randn(64, 1, 28, 28).to(device)
-                sample, _ = next(iter(test_loader))
-                sample = sample.to(device)
-                sample = sample.unsqueeze(1)
-                # text_padded, input_lengths, mel_padded, \
-                        # gate_padded, output_lengths  = next(iter(test_loader))
-                # # here we input mel padded into the model
-                # sample = unsqueeze_to_device(mel_padded, device).float()
+                x, y, c, g, input_lengths = next(iter((test_loader)))
+                # Prepare data
+                x, y = x.to(device), y.to(device)
+                input_lengths = input_lengths.to(device)
+                c = c.to(device) if c is not None else None
+                g = g.to(device) if g is not None else None
+                c = c.unsqueeze(1)
                 print("Evaluating samples")
                 if args.model == 'vae':
-                    reconstruction, _ = model(sample)
+                    reconstruction, _ = model(c)
                 elif args.model == 'vqvae':
-                    reconstruction, _, _ = model(sample)
+                    reconstruction, _, _ = model(c)
                 np.save(os.path.join(args.sampledir, format(args.dataset),\
                             'reconstruction_' + str(args.model)\
                             + '_data_' + str(args.dataset)\
