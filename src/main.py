@@ -19,6 +19,7 @@ from dataloader import (load_training_data, load_test_data,
 from models import DefaultVAE, VAE, VQVAE
 from train import train, train_vae, train_vqvae
 from test import test, test_vae, test_vqvae
+from audio_tacotron import inv_mel_spectrogram
 
 
 def parse_args():
@@ -143,14 +144,28 @@ def main():
                     reconstruction, _ = model(c)
                 elif args.model == 'vqvae':
                     reconstruction, _, _ = model(c)
+                reconstruction = reconstruction.squeeze(1)
+                reconstruction = reconstruction.cpu()
+                reconstruction = reconstruction.numpy()
                 np.save(os.path.join(args.sampledir, format(args.dataset),\
                             'reconstruction_' + str(args.model)\
                             + '_data_' + str(args.dataset)\
                             + '_dim_' + str(args.dim)\
                             + '_z_dim_' + str(args.z_dim)\
                             + '_epoch_' + str(epoch) + '.npy'),
-                        reconstruction.cpu(),
-                        allow_pickle=True)
+                            reconstruction,
+                            allow_pickle=True)
+                signal = inv_mel_spectrogram(reconstruction,
+                                             22050,
+                                             1024,
+                                             256,
+                                             80)
+                save_wav(signal, os.path.join(args.sampledir,format(args.dataset),\
+                            'reconstruction_' + str(args.model)\
+                            + '_data_' + str(args.dataset)\
+                            + '_dim_' + str(args.dim)\
+                            + '_z_dim_' + str(args.z_dim)\
+                            + '_epoch_' + str(epoch) + '.wav'))
                 # grid_samples = make_grid(sample.cpu(), nrow=8, range=(-1, 1), normalize=True)
                 # save_image(grid_samples,
                             # os.path.join(args.sampledir, format(args.dataset),\
