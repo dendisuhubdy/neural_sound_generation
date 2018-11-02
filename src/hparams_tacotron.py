@@ -329,7 +329,7 @@ hparams = tf.contrib.training.HParams(
     # train/test
     # test size can be specified as portion or num samples
     test_size=0.0441,  # 50 for CMU ARCTIC single speaker
-    test_num_samples=None,
+    test_num_samples=10,
     random_state=1234,
 
     # Loss

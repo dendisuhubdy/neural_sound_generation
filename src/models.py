@@ -108,7 +108,9 @@ class VAE(nn.Module):
         q_z_x = Normal(mu, logvar.mul(.5).exp())
         p_z = Normal(torch.zeros_like(mu), torch.ones_like(logvar))
         kl_div = kl_divergence(q_z_x, p_z).sum(1).mean()
-
+        # print((q_z_x.rsample()).size())
+        # torch.Size([B, dim, 14, 4])
+        
         x_tilde = self.decoder(q_z_x.rsample())
         #x_tilde = self.decoder(q_z_x)
         # print("========= Encoder output ===========")
@@ -201,8 +203,9 @@ class VQVAE(nn.Module):
         # x = nn.utils.rnn.pack_padded_sequence(
                 # x, input_lengths, batch_first=True)
         z_e_x = self.encoder(x)
-        # print("========= Encoder output ===========")
-        # print(z_e_x.size())
+        # print(z_e_x.shape)
+        #torch.Size([B, z_dim, 20, 10])
+        
         # also unpack it after the decoder
         # z_e_x, _ = nn.utils.rnn.pad_packed_sequence(
                         # z_e_x, batch_first=True)

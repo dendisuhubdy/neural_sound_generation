@@ -24,7 +24,7 @@ from audio_tacotron import inv_mel_spectrogram, save_wav
 
 def parse_args():
     parser = argparse.ArgumentParser(description='VAE MNIST Example')
-    parser.add_argument('--batch-size', type=int, default=128, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=36, metavar='N',
                         help='input batch size for training (default: 128)')
     parser.add_argument('--lr-rate', type=float, default=1e-3, metavar='N',
                         help='input batch size for training (default: 128)')
@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument('--sampledir', type=str,
                         default='./results/', metavar='N',
                         help='sample directories')
-    parser.add_argument('--epochs', type=int, default=100, metavar='N',
+    parser.add_argument('--epochs', type=int, default=1000, metavar='N',
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='enables CUDA training')
@@ -53,8 +53,6 @@ def parse_args():
                         help='hidden layer width')
     parser.add_argument('--z-dim', type=int, default=1, metavar='S',
                         help='hidden layer size')
-    # parser.add_argument('--hparams', type=str,
-                        # required=False, help='comma separated name=value pairs')
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     return args
@@ -81,7 +79,10 @@ def main():
         # Dataloader setup
         speaker_id = None
         data_root = os.path.join(args.datadir, 'ljs_1024_256_80')
-        audio_data_loaders = get_audio_data_loaders(data_root, speaker_id, test_shuffle=True)
+        audio_data_loaders = get_audio_data_loaders(data_root,
+                                                    speaker_id,
+                                                    args.batch_size,
+                                                    test_shuffle=True)
         train_loader = audio_data_loaders["train"]
         test_loader = audio_data_loaders["test"]
         print("LJSpeech data loaded")
@@ -135,7 +136,8 @@ def main():
 
             with torch.no_grad():
                 # sample = torch.randn(64, 1, 28, 28).to(device)
-                x, y, c, g, input_lengths = next(iter((test_loader)))
+                test_data_iterator = iter(test_loader)
+                x, y, c, g, input_lengths = next(test_data_iterator)
                 # Prepare data
                 x, y = x.to(device), y.to(device)
                 input_lengths = input_lengths.to(device)
@@ -163,18 +165,20 @@ def main():
 
                 mel_concat = None
 
-                for idx, mel in enumerate(reconstruction):
-                    if idx == 0:
+                for batch_idx, mel in enumerate(reconstruction):
+                    if batch_idx == 0:
                         mel_concat = mel
                     else:
                         mel_concat = np.concatenate((mel_concat, mel), axis=1)
                 
+                print(mel_concat.shape)
+
                 sampling_rate = 22050
                 fft_size = 1024
                 hop_size = 256 # overlap window
                 n_mels = 80 # number of melcepstrum coefficients (log scale)
 
-                assert mel_concat.shape[1] == n_mels
+                assert mel_concat.shape[0] == n_mels
                     
                 signal = inv_mel_spectrogram(mel,
                                              sampling_rate,
@@ -188,7 +192,9 @@ def main():
                             + '_dim_' + str(args.dim)\
                             + '_z_dim_' + str(args.z_dim)\
                             + '_epoch_' + str(epoch)\
-                            + '_' + str(idx) + '.wav'))
+                            + '_fftsize_' + str(fft_size)\
+                            + '_hopsize_' + str(hop_size)\
+                            + '.wav'))
                 # grid_samples = make_grid(sample.cpu(), nrow=8, range=(-1, 1), normalize=True)
                 # save_image(grid_samples,
                             # os.path.join(args.sampledir, format(args.dataset),\

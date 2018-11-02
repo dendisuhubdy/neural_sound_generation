@@ -296,6 +296,7 @@ if __name__ == "__main__":
     # load the numpy dumped file
     melspectrogram = np.load(os.path.join(out_dir, mel_filename))
     melspectrogram = melspectrogram.T
+    print(np.array(melspectrogram).shape)
     # print it's values
     assert np.array(melspectrogram).shape[0] == recon_n_mels
 

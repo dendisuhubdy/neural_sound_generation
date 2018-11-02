@@ -440,7 +440,7 @@ def time_string():
     return datetime.now().strftime('%Y-%m-%d %H:%M')
 
 
-def get_audio_data_loaders(data_root, speaker_id, test_shuffle=True):
+def get_audio_data_loaders(data_root, speaker_id, batch_size, test_shuffle=True):
     data_loaders = {}
     local_conditioning = hparams.cin_channels > 0
     for phase in ["train", "test"]:
@@ -467,7 +467,7 @@ def get_audio_data_loaders(data_root, speaker_id, test_shuffle=True):
             lengths = np.array(X.file_data_source.lengths)
             # Prepare sampler
             sampler = PartialyRandomizedSimilarTimeLengthSampler(
-                lengths, batch_size=hparams.batch_size)
+                lengths, batch_size)
             shuffle = False
         else:
             sampler = None
@@ -475,7 +475,7 @@ def get_audio_data_loaders(data_root, speaker_id, test_shuffle=True):
 
         dataset = PyTorchDataset(X, Mel)
         data_loader = data_utils.DataLoader(
-            dataset, batch_size=hparams.batch_size,
+            dataset, batch_size,
             num_workers=hparams.num_workers, sampler=sampler, shuffle=shuffle,
             collate_fn=collate_fn, pin_memory=hparams.pin_memory)
 
@@ -497,7 +497,8 @@ def get_audio_data_loaders(data_root, speaker_id, test_shuffle=True):
 def test_load_data():
     speaker_id = None
     data_root = str(sys.argv[1])
-    data_loaders = get_audio_data_loaders(data_root, speaker_id, test_shuffle=True)
+    batch_size = 12
+    data_loaders = get_audio_data_loaders(data_root, speaker_id, batch_size, test_shuffle=True)
     return data_loaders
 
 
