@@ -51,7 +51,7 @@ def parse_args():
                               between 0.1 and 2.0 (default: 1.0)')
     parser.add_argument('--dim', type=int, default=1, metavar='S',
                         help='hidden layer width')
-    parser.add_argument('--z-dim', type=int, default=1, metavar='S',
+    parser.add_argument('--z-dim', type=int, default=512, metavar='S',
                         help='hidden layer size')
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()

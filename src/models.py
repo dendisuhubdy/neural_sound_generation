@@ -119,10 +119,10 @@ class VAE(nn.Module):
 
 
 class VQEmbedding(nn.Module):
-    def __init__(self, K, D):
+    def __init__(self, z_dim, dim):
         super(VQEmbedding, self).__init__()
-        self.embedding = nn.Embedding(K, D)
-        self.embedding.weight.data.uniform_(-1./K, 1./K)
+        self.embedding = nn.Embedding(z_dim, dim)
+        self.embedding.weight.data.uniform_(-1./z_dim, 1./z_dim)
 
     def forward(self, z_e_x):
         z_e_x_ = z_e_x.permute(0, 2, 3, 1).contiguous()
@@ -159,7 +159,7 @@ class ResBlock(nn.Module):
 
 
 class VQVAE(nn.Module):
-    def __init__(self, input_dim, dim, K=512):
+    def __init__(self, input_dim, dim, z_dim=512):
         super(VQVAE, self).__init__()
         self.encoder = nn.Sequential(
             nn.Conv2d(input_dim, dim, 4, 2, 1),
@@ -170,7 +170,7 @@ class VQVAE(nn.Module):
             ResBlock(dim),
         )
 
-        self.codebook = VQEmbedding(K, dim)
+        self.codebook = VQEmbedding(z_dim, dim)
 
         self.decoder = nn.Sequential(
             ResBlock(dim),
@@ -204,7 +204,7 @@ class VQVAE(nn.Module):
                 # x, input_lengths, batch_first=True)
         z_e_x = self.encoder(x)
         # print(z_e_x.shape)
-        #torch.Size([B, z_dim, 20, 10])
+        #torch.Size([B, dim, 20, 10])
         
         # also unpack it after the decoder
         # z_e_x, _ = nn.utils.rnn.pad_packed_sequence(
