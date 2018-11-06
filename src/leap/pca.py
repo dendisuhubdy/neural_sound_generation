@@ -37,9 +37,10 @@ def apply_pca(x):
             # [1,12756,5.52],
             # [1.524,6787,3.94],
         # ])
-
-    x_std = StandardScaler().fit_transform(x)
-    print(pca.fit_transform(x_std))
     
     # https://stats.stackexchange.com/questions/235882/pca-in-numpy-and-sklearn-produces-different-results
     # pca.fit_transform(x)
+
+    x_std = StandardScaler().fit_transform(x)
+    result = pca.fit_transform(x_std)
+    return result
