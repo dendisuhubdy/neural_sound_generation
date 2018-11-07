@@ -218,7 +218,6 @@ def main():
                     'arch': args.model,
                     'state_dict': model.state_dict(),
                     'optimizer' : optimizer.state_dict()})
-        
     except KeyboardInterrupt:
         print("Interrupted!")
         pass
