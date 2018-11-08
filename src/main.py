@@ -24,7 +24,7 @@ from audio_tacotron import inv_mel_spectrogram, save_wav
 
 def parse_args():
     parser = argparse.ArgumentParser(description='VAE MNIST Example')
-    parser.add_argument('--batch-size', type=int, default=36, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 128)')
     parser.add_argument('--lr-rate', type=float, default=1e-3, metavar='N',
                         help='input batch size for training (default: 128)')
@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument('--sampledir', type=str,
                         default='./results/', metavar='N',
                         help='sample directories')
-    parser.add_argument('--epochs', type=int, default=1000, metavar='N',
+    parser.add_argument('--epochs', type=int, default=3000, metavar='N',
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='enables CUDA training')
@@ -78,7 +78,7 @@ def main():
     if args.dataset == 'ljspeech':
         # Dataloader setup
         speaker_id = None
-        data_root = os.path.join(args.datadir, 'ljs_1024_256_80')
+        data_root = os.path.join(args.datadir)
         audio_data_loaders = get_audio_data_loaders(data_root,
                                                     speaker_id,
                                                     args.batch_size,

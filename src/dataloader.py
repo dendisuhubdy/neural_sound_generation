@@ -37,8 +37,6 @@ from nnmnkwii.datasets import FileSourceDataset, FileDataSource
 
 import audio_tacotron as audio
 from audio_tacotron import is_mulaw_quantize, is_mulaw, is_raw
-from features import dynamic_range_compression
-from features import window_sumsquare, dynamic_range_compression
 from hparams_tacotron import hparams
 
 

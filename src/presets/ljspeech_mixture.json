@@ -40,7 +40,7 @@
   "pin_memory": true,
   "num_workers": 2,
   "test_size": 0.0441,
-  "test_num_samples": null,
+  "test_num_samples": 10,
   "random_state": 1234,
   "batch_size": 2,
   "adam_beta1": 0.9,
