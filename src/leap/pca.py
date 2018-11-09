@@ -36,7 +36,6 @@ def run_pca(x):
             # [1.524,6787,3.94],
         # ])
     pca = decomposition.PCA(n_components=4)
-
     
     # https://stats.stackexchange.com/questions/235882/pca-in-numpy-and-sklearn-produces-different-results
     # pca.fit_transform(x)
@@ -44,3 +43,19 @@ def run_pca(x):
     x_std = StandardScaler().fit_transform(x)
     result = pca.fit_transform(x_std)
     return result
+
+
+def test_pca(x):
+    # here we test the PCA
+    pass
+
+
+if __name__ == "__main__":
+    x = np.array([
+            [0.387,4878, 5.42],
+            [0.723,12104,5.25],
+            [1,12756,5.52],
+            [1.524,6787,3.94],
+        ])
+    result = run_pca(x)
+    print(result)
