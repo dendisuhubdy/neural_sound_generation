@@ -1,0 +1,12 @@
+[submodule "libs/audio"]
+	path = libs/audio
+	url = git@github.com:pytorch/audio.git
+[submodule "libs/pysptk"]
+	path = libs/pysptk
+	url = git@github.com:r9y9/pysptk.git
+[submodule "libs/bandmat"]
+	path = libs/bandmat
+	url = git@github.com:MattShannon/bandmat.git
+[submodule "libs/nnmnkwii"]
+	path = libs/nnmnkwii
+	url = git@github.com:r9y9/nnmnkwii.git
