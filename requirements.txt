@@ -3,15 +3,14 @@ pillow
 pyaudio
 nnmnkwii
 functools
-concurrent
 importlib
-matplotlib==2.1.0
-numpy==1.13.3
-inflect==0.2.5
-librosa==0.6.0
-scipy==1.0.0
-tensorboardX==1.1
-Unidecode==1.0.22
+matplotlib
+numpy
+inflect
+librosa
+scipy
+tensorboardX
+Unidecode
 https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.12.0-cp27-none-linux_x86_64.whl ; sys_platform == "linux"
 https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.12.0-cp36-cp36m-linux_x86_64.whl ; sys_platform == "linux2"
 https://storage.googleapis.com/tensorflow/mac/cpu/tensorflow-1.12.0-py3-none-any.whl ; sys_platform == "darwin"
