@@ -4,15 +4,16 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn import decomposition
 from sklearn import datasets
 from sklearn.preprocessing import StandardScaler
+from scipy import linalg as LA
 
-"""
-def pca_np():
-    x = np.array([
-	    [0.387,4878, 5.42],
-	    [0.723,12104,5.25],
-	    [1,12756,5.52],
-	    [1.524,6787,3.94],
-	])
+
+def run_pca_np(x):
+    # x = np.array([
+	    # [0.387,4878, 5.42],
+	    # [0.723,12104,5.25],
+	    # [1,12756,5.52],
+	    # [1.524,6787,3.94],
+	# ])
 
     #centering the data
     x -= np.mean(x, axis = 0)  
@@ -25,18 +26,17 @@ def pca_np():
     evals = evals[idx]
 
     a = np.dot(x, evecs) 
-    print(a)
-"""
+    return a
 
 def run_pca(x):
-    pca = decomposition.PCA(n_components=3)
-
     # x = np.array([
             # [0.387,4878, 5.42],
             # [0.723,12104,5.25],
             # [1,12756,5.52],
             # [1.524,6787,3.94],
         # ])
+    pca = decomposition.PCA(n_components=4)
+
     
     # https://stats.stackexchange.com/questions/235882/pca-in-numpy-and-sklearn-produces-different-results
     # pca.fit_transform(x)
