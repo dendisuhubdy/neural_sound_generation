@@ -28,7 +28,7 @@ def pca_np():
     print(a)
 """
 
-def apply_pca(x):
+def run_pca(x):
     pca = decomposition.PCA(n_components=3)
 
     # x = np.array([

@@ -58,7 +58,7 @@ class JointAngleListener(Leap.Listener):
                 direction.pitch * Leap.RAD_TO_DEG,
                 normal.roll * Leap.RAD_TO_DEG,
                 direction.yaw * Leap.RAD_TO_DEG))
-
+            
             # Get arm bone
             arm = hand.arm
             print("  Arm direction: %s, wrist position: %s, elbow position: %s" % (
@@ -66,7 +66,7 @@ class JointAngleListener(Leap.Listener):
                 arm.wrist_position,
                 arm.elbow_position))
 
-            joint_angle_array = []
+            joint_angle_array = [direction.pitch, normal.roll, direction.yaw]
             
             # Get fingers
             for finger in hand.fingers:
@@ -99,22 +99,22 @@ class JointAngleListener(Leap.Listener):
                     
                     if prev_bone_direction is None:
                         prev_bone_direction = np.asarray([bone.direction[0], bone.direction[1], bone.direction[2]])
-                        # print("prev_bone_direction")
-                        # print(prev_bone_direction)
+                        print("prev_bone_direction")
+                        print(prev_bone_direction)
                     else:
                         curr_bone_direction = np.asarray([bone.direction[0], bone.direction[1], bone.direction[2]])
-                        # print("current_bone_direction")
-                        # print(curr_bone_direction)
+                        print("current_bone_direction")
+                        print(curr_bone_direction)
                         joint_angle_bone = np.dot(prev_bone_direction, curr_bone_direction.T)
                         # joint angle bone must be a scalar
-                        # print("joint angle")
-                        # print(joint_angle_bone)
+                        print("joint angle")
+                        print(joint_angle_bone)
                         joint_angle_array.append(joint_angle_bone)
+                        prev_bone_direction = curr_bone_direction 
                     
                 # loop ends when all bone joint angles on each finger gets computed
-            # print("joint_angle_array")
-            # print(joint_angle_array)
-            
+            print("joint_angle_array")
+            print(joint_angle_array)            
             with open('./joint_angle_data.csv','a') as fd:
                 writer = csv.writer(fd)
                 writer.writerow(joint_angle_array)
