@@ -527,41 +527,41 @@ SWIG_CSBODY_PROXY(public, public, SWIGTYPE)
 
 %extend Leap::Image {
 %pythoncode {
-  def data(self):
-      ptr = byte_array(self.width * self.height * self.bytes_per_pixel)
-      LeapPython.Image_data(self, ptr)
-      return ptr
-  def distortion(self):
-      ptr = float_array(self.distortion_width * self.distortion_height)
-      LeapPython.Image_distortion(self, ptr)
-      return ptr
-  __swig_getmethods__["data"] = data
-  if _newclass:data = _swig_property(data)
-  __swig_getmethods__["distortion"] = distortion
-  if _newclass:distortion = _swig_property(distortion)
+def data(self):
+    ptr = byte_array(self.width * self.height * self.bytes_per_pixel)
+  LeapPython.Image_data(self, ptr)
+  return ptr
+def distortion(self):
+  ptr = float_array(self.distortion_width * self.distortion_height)
+  LeapPython.Image_distortion(self, ptr)
+  return ptr
+__swig_getmethods__["data"] = data
+if _newclass:data = _swig_property(data)
+__swig_getmethods__["distortion"] = distortion
+if _newclass:distortion = _swig_property(distortion)
 %}}
 
 %extend Leap::Mask {
 %pythoncode {
-  def data(self):
-      ptr = byte_array(self.width * self.height)
-      LeapPython.Mask_data(self, ptr)
-      return ptr
-  __swig_getmethods__["data"] = data
-  if _newclass:data = _swig_property(data)
+def data(self):
+  ptr = byte_array(self.width * self.height)
+  LeapPython.Mask_data(self, ptr)
+  return ptr
+__swig_getmethods__["data"] = data
+if _newclass:data = _swig_property(data)
 %}}
 
 %extend Leap::Frame {
 %pythoncode {
-  def serialize(self):
-      length = self.serialize_length
-      str = byte_array(length)
-      LeapPython.Frame_serialize(self, str)
-      return (str, length)
-  def deserialize(self, tup):
-      LeapPython.Frame_deserialize(self, tup[0], tup[1])
-  __swig_getmethods__["serialize"] = serialize
-  if _newclass:serialize = _swig_property(serialize)
+def serialize(self):
+  length = self.serialize_length
+  str = byte_array(length)
+  LeapPython.Frame_serialize(self, str)
+  return (str, length)
+def deserialize(self, tup):
+  LeapPython.Frame_deserialize(self, tup[0], tup[1])
+__swig_getmethods__["serialize"] = serialize
+if _newclass:serialize = _swig_property(serialize)
 %}}
 
 %constattrib( Leap::Image, void*, dataPointer );
@@ -986,26 +986,26 @@ extern "C" BOOL WINAPI DllMain(
 
 %extend Leap::Vector {
 %pythoncode {
-  def to_float_array(self): return [self.x, self.y, self.z]
-  def to_tuple(self): return (self.x, self.y, self.z)
+def to_float_array(self): return [self.x, self.y, self.z]
+def to_tuple(self): return (self.x, self.y, self.z)
 %}}
 %extend Leap::Matrix {
 %pythoncode {
-  def to_array_3x3(self, output = None):
-      if output is None:
-          output = [0]*9
-      output[0], output[1], output[2] = self.x_basis.x, self.x_basis.y, self.x_basis.z
-      output[3], output[4], output[5] = self.y_basis.x, self.y_basis.y, self.y_basis.z
-      output[6], output[7], output[8] = self.z_basis.x, self.z_basis.y, self.z_basis.z
-      return output
-  def to_array_4x4(self, output = None):
-      if output is None:
-          output = [0]*16
-      output[0],  output[1],  output[2],  output[3]  = self.x_basis.x, self.x_basis.y, self.x_basis.z, 0.0
-      output[4],  output[5],  output[6],  output[7]  = self.y_basis.x, self.y_basis.y, self.y_basis.z, 0.0
-      output[8],  output[9],  output[10], output[11] = self.z_basis.x, self.z_basis.y, self.z_basis.z, 0.0
-      output[12], output[13], output[14], output[15] = self.origin.x,  self.origin.y,  self.origin.z,  1.0
-      return output
+def to_array_3x3(self, output = None):
+  if output is None:
+      output = [0]*9
+  output[0], output[1], output[2] = self.x_basis.x, self.x_basis.y, self.x_basis.z
+  output[3], output[4], output[5] = self.y_basis.x, self.y_basis.y, self.y_basis.z
+  output[6], output[7], output[8] = self.z_basis.x, self.z_basis.y, self.z_basis.z
+  return output
+def to_array_4x4(self, output = None):
+  if output is None:
+      output = [0]*16
+  output[0],  output[1],  output[2],  output[3]  = self.x_basis.x, self.x_basis.y, self.x_basis.z, 0.0
+  output[4],  output[5],  output[6],  output[7]  = self.y_basis.x, self.y_basis.y, self.y_basis.z, 0.0
+  output[8],  output[9],  output[10], output[11] = self.z_basis.x, self.z_basis.y, self.z_basis.z, 0.0
+  output[12], output[13], output[14], output[15] = self.origin.x,  self.origin.y,  self.origin.z,  1.0
+  return output
 %}}
 
 #endif
@@ -1089,7 +1089,7 @@ extern "C" BOOL WINAPI DllMain(
 %rename(__len__) Leap::BaseType##List::count;
 %extend Leap::BaseType##List {
 %pythoncode {
-  def __iter__(self):
+def __iter__(self):
     _pos = 0
     while _pos < len(self):
       yield self[_pos]
@@ -1131,7 +1131,7 @@ extern "C" BOOL WINAPI DllMain(
 // Use dynamic typing to get or set any type of config value with one function
 %extend Leap::Config {
 %pythoncode {
-  def get(self, *args):
+def get(self, *args):
     type = LeapPython.Config_type(self, *args)
     if type == LeapPython.Config_TYPE_BOOLEAN:
       return LeapPython.Config_get_bool(self, *args)
@@ -1142,7 +1142,7 @@ extern "C" BOOL WINAPI DllMain(
     elif type == LeapPython.Config_TYPE_STRING:
       return LeapPython.Config_get_string(self, *args)
     return None
-  def set(self, *args):
+def set(self, *args):
     type = LeapPython.Config_type(self, *args[:-1])  # Do not pass value through
     if type == LeapPython.Config_TYPE_BOOLEAN:
       return LeapPython.Config_set_bool(self, *args)
