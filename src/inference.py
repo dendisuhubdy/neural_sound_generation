@@ -35,6 +35,9 @@ class JointAngleListener(Leap.Listener):
     finger_names = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
     bone_names = ['Metacarpal', 'Proximal', 'Intermediate', 'Distal']
     state_names = ['STATE_INVALID', 'STATE_START', 'STATE_UPDATE', 'STATE_END']
+    
+    def __init__(self):
+        load_model()
 
     def on_init(self, controller):
         print("Initialized")
@@ -139,6 +142,8 @@ class JointAngleListener(Leap.Listener):
             latent = run_pca(joint_angle_array)
 
             # fetch latent into autoencoder 
+            # result = model(latent)
+            # print(result)
 
             # print("joint_angle_array")
             # print(joint_angle_array)            
