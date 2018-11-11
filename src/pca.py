@@ -28,14 +28,14 @@ def run_pca_np(x):
     a = np.dot(x, evecs) 
     return a
 
-def run_pca(x):
+def run_pca(x, n_components=4):
     # x = np.array([
             # [0.387,4878, 5.42],
             # [0.723,12104,5.25],
             # [1,12756,5.52],
             # [1.524,6787,3.94],
         # ])
-    pca = decomposition.PCA(n_components=4)
+    pca = decomposition.PCA(n_components)
     
     # https://stats.stackexchange.com/questions/235882/pca-in-numpy-and-sklearn-produces-different-results
     # pca.fit_transform(x)
