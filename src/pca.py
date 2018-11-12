@@ -28,7 +28,7 @@ def run_pca_np(x):
     a = np.dot(x, evecs) 
     return a
 
-def run_pca(x, n_components=4):
+def run_pca(x, n_components=3):
     # x = np.array([
             # [0.387,4878, 5.42],
             # [0.723,12104,5.25],

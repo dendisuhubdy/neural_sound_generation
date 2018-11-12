@@ -7,6 +7,7 @@ All rights reserved
 
 import csv
 import numpy as np
+from numpy import genfromtxt
 import sys
 import time
 
@@ -27,19 +28,24 @@ import Leap, sys, time
 from Leap import CircleGesture, KeyTapGesture, ScreenTapGesture, SwipeGesture
 
 def load_model():
-
     pass
+
+
+def load_pca():
+    my_data = genfromtxt('./results/joint_angle_data.csv', delimiter=',')
+    # remember to do a transpose on the input
+    pca_matrix = run_pca(my_data.T)
+    return pca_matrix
 
 
 class JointAngleListener(Leap.Listener):
     finger_names = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
     bone_names = ['Metacarpal', 'Proximal', 'Intermediate', 'Distal']
     state_names = ['STATE_INVALID', 'STATE_START', 'STATE_UPDATE', 'STATE_END']
-    
-    def __init__(self):
-        load_model()
 
     def on_init(self, controller):
+        self.pca_matrix = load_pca()
+        model = load_model()
         print("Initialized")
 
     def on_connect(self, controller):
@@ -115,11 +121,11 @@ class JointAngleListener(Leap.Listener):
                     # print(bone.direction)
                     # for example (-0.110091, -0.521456, -0.846146)
 
-                    print("      Bone: %s, start: %s, end: %s, direction: %s" % (
-                        self.bone_names[bone.type],
-                        bone.prev_joint,
-                        bone.next_joint,
-                        bone.direction))
+                    # print("      Bone: %s, start: %s, end: %s, direction: %s" % (
+                        # self.bone_names[bone.type],
+                        # bone.prev_joint,
+                        # bone.next_joint,
+                        # bone.direction))
                     
                     if prev_bone_direction is None:
                         prev_bone_direction = np.asarray([bone.direction[0], bone.direction[1], bone.direction[2]])
@@ -132,14 +138,16 @@ class JointAngleListener(Leap.Listener):
                         joint_angle_bone = np.dot(prev_bone_direction, curr_bone_direction.T)
                         # joint angle bone must be a scalar
                         # print("joint angle")
-                        print(joint_angle_bone)
+                        # print(joint_angle_bone)
                         joint_angle_array.append(joint_angle_bone)
                         prev_bone_direction = curr_bone_direction         
                     # loop ends when all bone joint angles on each finger gets computed
             
             # model execution starts here
             # input joint angle bones into a PCA
-            latent = run_pca(joint_angle_array)
+            latent = np.dot(joint_angle_array, self.pca_matrix)
+            print(latent)
+            # print(latent.shape)
 
             # fetch latent into autoencoder 
             # result = model(latent)
