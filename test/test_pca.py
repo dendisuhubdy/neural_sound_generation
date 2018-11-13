@@ -30,13 +30,24 @@ def show_histogram(X, y, label_dict, feature_dict):
     
 def pca_np(X, y, label_dict, feature_dict):
     # standarize data with mean 0 and variance 1
+    print("Before normalization")
+    mean = np.mean(X)
+    variance = np.var(X)
+    print(mean)
+    print(variance)
+
     X_std = StandardScaler().fit_transform(X)
+    print("After normalization")
+    mean_std = np.mean(X_std)
+    variance_std = np.var(X_std)
+    print(mean_std)
+    print(variance_std)
 
     # calculate the mean vector
     mean_vec = np.mean(X_std, axis=0)
     # compute the covariance matrix
     cov_mat = (X_std - mean_vec).T.dot((X_std - mean_vec)) / (X_std.shape[0]-1)
-    print('Covariance matrix \n%s' %cov_mat)
+    # print('Covariance matrix \n%s' %cov_mat)
 
     # or using Numpy covariance matrix
     # print('NumPy covariance matrix: \n%s' %np.cov(X_std.T))
@@ -45,8 +56,8 @@ def pca_np(X, y, label_dict, feature_dict):
 
     eig_vals, eig_vecs = np.linalg.eig(cov_mat)
 
-    print('Eigenvectors \n%s' %eig_vecs)
-    print('\nEigenvalues \n%s' %eig_vals)
+    # print('Eigenvectors \n%s' %eig_vecs)
+    # print('\nEigenvalues \n%s' %eig_vals)
 
     # Eigendecomposition of the standardized data
     # based on the correlation matrix
@@ -55,7 +66,7 @@ def pca_np(X, y, label_dict, feature_dict):
     u,s,v = np.linalg.svd(X_std.T)
     for ev in eig_vecs.T:
         np.testing.assert_array_almost_equal(1.0, np.linalg.norm(ev))
-    print('Everything ok!')
+    # print('Everything ok!')
     # Make a list of (eigenvalue, eigenvector) tuples
     eig_pairs = [(np.abs(eig_vals[i]), eig_vecs[:,i]) for i in range(len(eig_vals))]
 
@@ -63,9 +74,9 @@ def pca_np(X, y, label_dict, feature_dict):
     eig_pairs.sort(key=lambda x: x[0], reverse=True)
 
     # Visually confirm that the list is correctly sorted by decreasing eigenvalues
-    print('Eigenvalues in descending order:')
-    for i in eig_pairs:
-        print(i[0])
+    # print('Eigenvalues in descending order:')
+    # for i in eig_pairs:
+        # print(i[0])
 
     tot = sum(eig_vals)
     var_exp = [(i / tot)*100 for i in sorted(eig_vals, reverse=True)]
@@ -87,11 +98,12 @@ def pca_np(X, y, label_dict, feature_dict):
     matrix_w = np.hstack((eig_pairs[0][1].reshape(4,1),
                           eig_pairs[1][1].reshape(4,1)))
 
-    print('Matrix W:\n', matrix_w)
+    # print('Matrix W:\n', matrix_w)
 
     # project this to a new space
 
     Y = X_std.dot(matrix_w)
+    print(Y.shape)
 
     with plt.style.context('seaborn-whitegrid'):
         plt.figure(figsize=(6, 4))
@@ -107,7 +119,7 @@ def pca_np(X, y, label_dict, feature_dict):
         plt.tight_layout()
         plt.savefig("./pca_result_numpy.png")
 
-    print(Y)
+    # print(Y)
     return Y
 
 
@@ -131,7 +143,9 @@ def pca_sklearn(X, y, label_dict, feature_dict):
         plt.savefig("./pca_result_sklearn.png")
     
     print(Y_sklearn)
+    print(Y_sklearn.shape)
     return Y_sklearn
+
 
 if __name__ == "__main__":
     df = pd.read_csv(
@@ -161,4 +175,4 @@ if __name__ == "__main__":
     show_histogram(X, y, label_dict, feature_dict)
 
     result1 = pca_np(X, y, label_dict, feature_dict)
-    result2 = pca_sklearn(X, y, label_dict, feature_dict)
+    # result2 = pca_sklearn(X, y, label_dict, feature_dict)
