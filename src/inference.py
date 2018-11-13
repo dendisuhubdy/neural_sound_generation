@@ -35,6 +35,7 @@ def load_pca():
     my_data = genfromtxt('./results/joint_angle_data.csv', delimiter=',')
     # remember to do a transpose on the input
     pca_matrix = run_pca(my_data.T)
+    print(pca_matrix)
     return pca_matrix
 
 
@@ -138,7 +139,7 @@ class JointAngleListener(Leap.Listener):
                         joint_angle_bone = np.dot(prev_bone_direction, curr_bone_direction.T)
                         # joint angle bone must be a scalar
                         # print("joint angle")
-                        # print(joint_angle_bone)
+                        print(joint_angle_bone)
                         joint_angle_array.append(joint_angle_bone)
                         prev_bone_direction = curr_bone_direction         
                     # loop ends when all bone joint angles on each finger gets computed
