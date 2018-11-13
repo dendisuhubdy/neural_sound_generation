@@ -29,18 +29,19 @@ def show_histogram(X, y, label_dict, feature_dict):
         #plt.show()
     
 def pca_np(X, y, label_dict, feature_dict):
+    # standarize data with mean 0 and variance 1
     X_std = StandardScaler().fit_transform(X)
 
+    # calculate the mean vector
     mean_vec = np.mean(X_std, axis=0)
+    # compute the covariance matrix
     cov_mat = (X_std - mean_vec).T.dot((X_std - mean_vec)) / (X_std.shape[0]-1)
     print('Covariance matrix \n%s' %cov_mat)
 
     # or using Numpy covariance matrix
-
-    print('NumPy covariance matrix: \n%s' %np.cov(X_std.T))
-
+    # print('NumPy covariance matrix: \n%s' %np.cov(X_std.T))
     # perform eigendecomposition on the covariance matrix
-    cov_mat = np.cov(X_std.T)
+    # cov_mat = np.cov(X_std.T)
 
     eig_vals, eig_vecs = np.linalg.eig(cov_mat)
 
