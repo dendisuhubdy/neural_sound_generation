@@ -1,9 +1,5 @@
 torch
 pillow
-pyaudio
-nnmnkwii
-functools
-importlib
 matplotlib
 numpy
 inflect
