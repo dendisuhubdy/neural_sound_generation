@@ -23,24 +23,30 @@ def run_pca_np(x):
 
 def run_pca(x, n_components=3):
     scaler = StandardScaler(copy=True, with_mean=True, with_std=True)
-    print("Before normalization")
-    mean = np.mean(x)
-    variance = np.var(x)
-    print(mean)
-    print(variance)
+    # print("Before normalization")
+    # mean = np.mean(x)
+    # variance = np.var(x)
+    # print(mean)
+    # print(variance)
     scaler.fit(x)
     # print(scaler.mean_)
     x_std = scaler.transform(x)
-    print("After normalization")
-    mean_std = np.mean(x_std)
-    variance_std = np.var(x_std)
-    print(mean_std)
-    print(variance_std)
+    # print("After normalization")
+    # mean_std = np.mean(x_std)
+    # variance_std = np.var(x_std)
+    # print(mean_std)
+    # print(variance_std)
     # print(x_std)
     pca = decomposition.PCA(n_components)
     # https://stats.stackexchange.com/questions/235882/pca-in-numpy-and-sklearn-produces-different-results
     # input the standarized data with mean 0 and var 1 to the PCA
     result = pca.fit_transform(x_std)
+    # we can just return this
+    # but we can normalize
+    # the result too
+    # scaler.fit(result)
+    # print(scaler.mean_)
+    # result_std = scaler.transform(result)
     return result
 
 
