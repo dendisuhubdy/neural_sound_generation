@@ -14,6 +14,7 @@ class JointAngleListener(Leap.Listener):
     finger_names = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
     bone_names = ['Metacarpal', 'Proximal', 'Intermediate', 'Distal']
     state_names = ['STATE_INVALID', 'STATE_START', 'STATE_UPDATE', 'STATE_END']
+    program_state = ['hand_rest', 'train_pca']
 
     def on_init(self, controller):
         print("Initialized")
@@ -115,7 +116,7 @@ class JointAngleListener(Leap.Listener):
                 # loop ends when all bone joint angles on each finger gets computed
             print("joint_angle_array")
             print(joint_angle_array)            
-            with open('./joint_angle_data.csv','a') as fd:
+            with open('./result/hand_rest.csv','a') as fd:
                 writer = csv.writer(fd)
                 writer.writerow(joint_angle_array)
 

@@ -6,6 +6,7 @@ results/*
 src/features/results/*
 src/features/source/*
 models/*
+test/results/*
 
 ### C ###
 # Prerequisites
