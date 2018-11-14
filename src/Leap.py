@@ -342,6 +342,7 @@ class Vector(_object):
 
     def to_float_array(self): return [self.x, self.y, self.z]
     def to_tuple(self): return (self.x, self.y, self.z)
+    %
     __swig_destroy__ = LeapPython.delete_Vector
     __del__ = lambda self: None
 Vector_swigregister = LeapPython.Vector_swigregister
@@ -434,6 +435,7 @@ class Matrix(_object):
       output[8],  output[9],  output[10], output[11] = self.z_basis.x, self.z_basis.y, self.z_basis.z, 0.0
       output[12], output[13], output[14], output[15] = self.origin.x,  self.origin.y,  self.origin.z,  1.0
       return output
+    %
     __swig_destroy__ = LeapPython.delete_Matrix
     __del__ = lambda self: None
 Matrix_swigregister = LeapPython.Matrix_swigregister
@@ -1319,7 +1321,7 @@ class Image(Interface):
         is_valid = _swig_property(LeapPython.Image_is_valid_get)
 
     def data(self):
-      ptr = byte_array(self.width * self.height * self.bytes_per_pixel)
+        ptr = byte_array(self.width * self.height * self.bytes_per_pixel)
       LeapPython.Image_data(self, ptr)
       return ptr
     def distortion(self):
@@ -1330,6 +1332,7 @@ class Image(Interface):
     if _newclass:data = _swig_property(data)
     __swig_getmethods__["distortion"] = distortion
     if _newclass:distortion = _swig_property(distortion)
+    %
     __swig_getmethods__["data_pointer"] = LeapPython.Image_data_pointer_get
     if _newclass:
         data_pointer = _swig_property(LeapPython.Image_data_pointer_get)
@@ -1403,6 +1406,7 @@ class Mask(Interface):
       return ptr
     __swig_getmethods__["data"] = data
     if _newclass:data = _swig_property(data)
+    %
     __swig_getmethods__["data_pointer"] = LeapPython.Mask_data_pointer_get
     if _newclass:
         data_pointer = _swig_property(LeapPython.Mask_data_pointer_get)
@@ -1462,6 +1466,7 @@ class PointableList(Interface):
         while _pos < len(self):
           yield self[_pos]
           _pos += 1
+    %
     __swig_destroy__ = LeapPython.delete_PointableList
     __del__ = lambda self: None
 PointableList_swigregister = LeapPython.PointableList_swigregister
@@ -1517,6 +1522,7 @@ class FingerList(Interface):
         while _pos < len(self):
           yield self[_pos]
           _pos += 1
+    %
     __swig_destroy__ = LeapPython.delete_FingerList
     __del__ = lambda self: None
 FingerList_swigregister = LeapPython.FingerList_swigregister
@@ -1566,6 +1572,7 @@ class ToolList(Interface):
         while _pos < len(self):
           yield self[_pos]
           _pos += 1
+    %
     __swig_destroy__ = LeapPython.delete_ToolList
     __del__ = lambda self: None
 ToolList_swigregister = LeapPython.ToolList_swigregister
@@ -1615,6 +1622,7 @@ class HandList(Interface):
         while _pos < len(self):
           yield self[_pos]
           _pos += 1
+    %
     __swig_destroy__ = LeapPython.delete_HandList
     __del__ = lambda self: None
 HandList_swigregister = LeapPython.HandList_swigregister
@@ -1655,6 +1663,7 @@ class GestureList(Interface):
         while _pos < len(self):
           yield self[_pos]
           _pos += 1
+    %
     __swig_destroy__ = LeapPython.delete_GestureList
     __del__ = lambda self: None
 GestureList_swigregister = LeapPython.GestureList_swigregister
@@ -1698,6 +1707,7 @@ class ScreenList(Interface):
         while _pos < len(self):
           yield self[_pos]
           _pos += 1
+    %
     __swig_destroy__ = LeapPython.delete_ScreenList
     __del__ = lambda self: None
 ScreenList_swigregister = LeapPython.ScreenList_swigregister
@@ -1738,6 +1748,7 @@ class DeviceList(Interface):
         while _pos < len(self):
           yield self[_pos]
           _pos += 1
+    %
     __swig_destroy__ = LeapPython.delete_DeviceList
     __del__ = lambda self: None
 DeviceList_swigregister = LeapPython.DeviceList_swigregister
@@ -1778,6 +1789,7 @@ class ImageList(Interface):
         while _pos < len(self):
           yield self[_pos]
           _pos += 1
+    %
     __swig_destroy__ = LeapPython.delete_ImageList
     __del__ = lambda self: None
 ImageList_swigregister = LeapPython.ImageList_swigregister
@@ -1880,6 +1892,7 @@ class MaskList(Interface):
         while _pos < len(self):
           yield self[_pos]
           _pos += 1
+    %
     __swig_destroy__ = LeapPython.delete_MaskList
     __del__ = lambda self: None
 MaskList_swigregister = LeapPython.MaskList_swigregister
@@ -2058,6 +2071,7 @@ class Frame(Interface):
       LeapPython.Frame_deserialize(self, tup[0], tup[1])
     __swig_getmethods__["serialize"] = serialize
     if _newclass:serialize = _swig_property(serialize)
+    %
     __swig_destroy__ = LeapPython.delete_Frame
     __del__ = lambda self: None
 Frame_swigregister = LeapPython.Frame_swigregister
@@ -2167,6 +2181,7 @@ class Config(Interface):
         elif type == LeapPython.Config_TYPE_STRING:
           return LeapPython.Config_set_string(self, *args)
         return False
+    %
     __swig_destroy__ = LeapPython.delete_Config
     __del__ = lambda self: None
 Config_swigregister = LeapPython.Config_swigregister
